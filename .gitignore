@@ -2,3 +2,5 @@
 __pycache__/
 *.py[cod]
 *$py.class
+videos
+.DS_Store
