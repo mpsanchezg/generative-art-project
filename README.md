@@ -8,6 +8,21 @@ Once the project is done, you can train it by running the command `docker run <I
 
 ## Run
 
+### Environment setup
+
+```
+conda create generative-art-project
+```
+
+```
+conda activate generative-art-project
+```
+
+```
+pip install -r requirements
+```
+
+
 ### Build Docker image
 
 ```
