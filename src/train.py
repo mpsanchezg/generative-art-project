@@ -3,23 +3,10 @@
 import random
 from src.load_data import load_data
 from src.custom_tranformations import FrameSpectrogramDataset
-from GAN import *
+from model import *
+from utils import denormalize, check_nan
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-
-# Function to denormalize images
-def denormalize(tensor):
-    tensor = tensor * 0.5 + 0.5  # Denormalize from [-1, 1] to [0, 1]
-    return tensor
-
-
-# Function to check for NaNs in a tensor
-def check_nan(tensor, name=""):
-    if torch.isnan(tensor).any():
-        print(f"NaN detected in {name}")
-        return True
-    return False
 
 
 def plot_first_10_pairs_of_data(first_10_pairs):
@@ -98,18 +85,13 @@ def train():
     dataloader = DataLoader(train_dataset, batch_size=1, shuffle=False)  # Assuming hparams['batch_size'] is 16
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
-    # TODO fix path
-
-
-    print(len(dataset))
-
     # Get the first 10 pairs of data from the dataset
     first_10_pairs = [dataset[i] for i in range(10)]
+    plot_first_10_pairs_of_data(first_10_pairs)
 
     # Get the last 10 pairs of data from the dataset
     last_10_pairs = [dataset[i] for i in range(len(dataset) - 10, len(dataset))]
-    # plot_first_10_pairs_of_data(first_10_pairs)
-    # plot_last_10_pairs_of_data(last_10_pairs)
+    plot_last_10_pairs_of_data(last_10_pairs)
 
     # Initialize models, optimizers, and criteria
     netG = UNetGenerator().to(device)
@@ -279,6 +261,9 @@ def train():
             plt.show()
 
     plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G)
+
+    # Save the model weights
+    torch.save(netG.state_dict(), 'model_weights_V7.pth')
 
 
 if __name__ == "__main__":
