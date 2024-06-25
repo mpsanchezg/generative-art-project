@@ -1,49 +1,16 @@
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, Subset
-import torchvision.transforms as transforms
-import torch.nn.functional as F
-import random
-import matplotlib.pyplot as plt
-from torchvision.utils import make_grid
-from torch.optim.lr_scheduler import StepLR
-from torch.cuda.amp import GradScaler, autocast
-from itertools import cycle
-from PIL import Image
-import math
-from IPython.display import display
-from tqdm import tqdm
-import cv2
-import librosa
-from torchvision import transforms, datasets, utils
-from typing import Tuple
-from torchvision import models
-
-from torchvision import transforms, datasets, utils
-from PIL import Image
-import numpy as np
-import math
-from IPython.display import display
-from tqdm import tqdm
-from itertools import cycle
-from typing import Tuple
-import librosa
-import cv2
-
 import os
-from torch.utils.data import Dataset, DataLoader, Subset
-from torchvision.utils import make_grid, save_image
 
+import cv2
+import librosa
+import numpy as np
 from moviepy.editor import VideoFileClip
 
-import random
+from src.config import DATA_DIR
 
 
 def load_data():
     # Change directory to the folder containing the videos
-    os.chdir('/home/eduardo/projects/generative-art-project/data/raining/')
+    os.path.join(DATA_DIR, "raining")
 
     # Get a list of all .mp4 files in the folder
     video_files = [f for f in os.listdir('.') if f.endswith('.mp4')]
