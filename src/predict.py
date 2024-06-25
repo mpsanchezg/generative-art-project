@@ -1,20 +1,19 @@
+
 import os
-import torch
-from torch.utils.data import DataLoader, Dataset
-from torchvision.utils import save_image, make_grid
-from torchvision import transforms
-import numpy as np
-import matplotlib.pyplot as plt
-# from torchvision.transforms import functional as F
 
 import cv2
-
-import torch.nn as nn
-import random
-import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+from torchvision.utils import save_image
 
 from model import UNetGenerator
+from src.config import DATA_DIR
 from utils import denormalize
+
+# from torchvision.transforms import functional as F
 
 # Assuming UNetGenerator is defined as above
 # Load the model weights
@@ -76,7 +75,9 @@ transform = transforms.Compose([
 ])
 
 # Create the dataset and dataloader for inference
-folder_path = 'C:/Users/David/Documents/postgrau/Projecte/raining/frames/Inference Spectrograms'
+folder_path = os.path.join(DATA_DIR, "raining/frames/Inference Spectrograms")
+frames_dir = os.path.join(DATA_DIR, 'results/individual_frames')
+
 inference_dataset = SpectrogramNPYDataset(folder_path, transform=transform)
 inference_loader = DataLoader(inference_dataset, batch_size=16, shuffle=False)
 
@@ -138,7 +139,9 @@ with torch.no_grad():
 
             # Save the generated frame
             save_image(fake_frame_denorm.squeeze(),
-                       f'results/individual_frames/frame_{batch_idx * inference_loader.batch_size + i + 1}.png')
+                       os.path.join(
+                           frames_dir,
+                           f'frame_{batch_idx * inference_loader.batch_size + i + 1}.png'))
 
             # Update the previous frame for the next iteration
             previous_frame = fake_frame
@@ -157,16 +160,15 @@ def visualize_generated_frames(folder_path, num_samples=5):
     plt.show()
 
 
-visualize_generated_frames('results/individual_frames', num_samples=5)
+visualize_generated_frames(frames_dir, num_samples=5)
 
 # -------------------- third cell
 
 
-# Directory containing the frames
-frames_dir = 'results/individual_frames'
+
 
 # Path to save the video
-video_path = 'results/output_video_V10_5.mp4'
+video_path = os.path.join(DATA_DIR, 'results/output_video_V10_5.mp4')
 
 # Frames per second
 fps = 30

@@ -1,58 +1,23 @@
 
-
+import os
 import random
-from src.load_data import load_data
+
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader, Subset
+from torchvision.utils import make_grid
+
+from model import UNetGenerator, MultiScaleDiscriminator, weights_init_normal, PerceptualLoss, FeatureMatchingLoss, \
+    compute_gradient_penalty
+from src.config import DATA_DIR
 from src.custom_tranformations import FrameSpectrogramDataset
-from model import *
-from utils import denormalize, check_nan
+from src.load_data import load_data
+from utils import denormalize, check_nan, plot_losses, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-
-def plot_first_10_pairs_of_data(first_10_pairs):
-    # Plot the first 10 pairs of data
-    fig, axs = plt.subplots(10, 2, figsize=(10, 20))
-    for i, (frame, prev_frame, spectrogram) in enumerate(first_10_pairs):
-        frame = denormalize(frame.permute(1, 2, 0).numpy())  # Denormalize and rearrange dimensions
-        spectrogram = denormalize(spectrogram.permute(1, 2, 0).numpy())  # Denormalize
-
-        axs[i, 0].imshow(frame)
-        axs[i, 1].imshow(spectrogram, cmap='viridis')
-        axs[i, 0].axis('off')
-        axs[i, 1].axis('off')
-
-    plt.show()
-
-
-def plot_last_10_pairs_of_data(last_10_pairs):
-    # Plot the last 10 pairs of data
-    fig, axs = plt.subplots(10, 2, figsize=(10, 20))
-    for i, (frame, prev_frame, spectrogram) in enumerate(last_10_pairs):
-        frame = denormalize(frame.permute(1, 2, 0).numpy())  # Denormalize and rearrange dimensions
-        spectrogram = denormalize(spectrogram.permute(1, 2, 0).numpy())  # Denormalize
-
-        axs[i, 0].imshow(frame)
-        axs[i, 1].imshow(spectrogram, cmap='viridis')
-        axs[i, 0].axis('off')
-        axs[i, 1].axis('off')
-
-    plt.show()
-
-
-def plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G):
-    # Plot the losses
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(losses_G, label='Generator Loss')
-    plt.plot(losses_D, label='Discriminator Loss')
-    plt.plot(val_iteration_steps, val_losses_G, label='Validation Generator Loss', marker='o')
-    plt.xlabel('Iterations')
-    plt.ylabel('Loss')
-    plt.title('Generator, Discriminator, and Validation Generator Losses')
-    plt.legend()
-    plt.ylim(0, 20)  # Set the y-axis limits
-    plt.grid(True)
-    plt.show()
 
 
 def train():
@@ -72,7 +37,7 @@ def train():
     load_data()
 
     # Initialize dataset and dataloaders
-    path = '/home/eduardo/projects/generative-art-project/data/raining/frames/'
+    path = os.path.join(DATA_DIR, "raining/frames")
 
     dataset = FrameSpectrogramDataset(path)
     dataset_size = len(dataset)
@@ -263,7 +228,7 @@ def train():
     plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G)
 
     # Save the model weights
-    torch.save(netG.state_dict(), 'model_weights_V7.pth')
+    torch.save(netG.state_dict(), "model_weights_V7.pth")
 
 
 if __name__ == "__main__":
