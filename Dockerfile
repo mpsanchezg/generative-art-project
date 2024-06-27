@@ -15,3 +15,7 @@ COPY src/ /app
 
 # command to run on container start
 ENTRYPOINT ["python", "./entrypoint.py"]
+
+
+
+fdka{sñfj{asdkñfj}}
