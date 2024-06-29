@@ -22,6 +22,11 @@ conda activate generative-art-project
 pip install -r requirements
 ```
 
+## Connect to Google VM
+
+```
+gcloud compute ssh --zone "asia-northeast3-b" "generative-art-project-vm" --project "aidl2024-generatie-art-project"
+```
 
 ### Build Docker image
 
@@ -34,3 +39,5 @@ docker build -f Dockerfile -t gap_image .
 ```
 docker run -v ${ROOT_DIR}/data:/data -it gap_image train
 ```
+
+
