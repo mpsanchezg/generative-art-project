@@ -6,3 +6,5 @@ videos
 .DS_Store
 
 frames
+data/*
+
