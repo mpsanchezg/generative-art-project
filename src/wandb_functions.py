@@ -1,37 +1,44 @@
 import numpy as np
-import pandas as pd
 
 import torch
 import torch.nn as nn
 import wandb
 import matplotlib.pyplot as plt
 
-from logger import Logger
 from datetime import datetime
-from utils import TaskType
 from typing import Optional
 
+from src.config import PROJECT_NAME
 
-class WandbLogger(Logger):
+
+class WandbLogger:
 
     def __init__(
         self,
-        task: TaskType,
-        model: nn.Module,
+        task: str,
+        hparams: dict,
+        # model: nn.Module,
     ):
         wandb.login()
-        wandb.init(project=PROJECT_NAME, config)
+        wandb.init(project=PROJECT_NAME, config=hparams)
         wandb.run.name = f'{task}-{datetime.now().strftime("%Y%m%d-%H%M%S")}'
         # start a new wandb run to track this script
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project=PROJECT_NAME,
-
-            # track hyperparameters and run metadata
-            config=hparams
-        )
         # TODO: Log weights and gradients to wandb. Doc: https://docs.wandb.ai/ref/python/watch
 
+    @staticmethod
+    def log_plots(
+            plot: plt.Figure,
+            title: str,
+    ):
+        # Save the plot as an image
+        plt.savefig(f'{title}.png')
+
+        # Log the image to W&B
+        wandb.log({title: wandb.Image(f'{title}.png')})
+
+    @staticmethod
+    def finish():
+        wandb.finish()
 
     def log_reconstruction_training(
         self,
@@ -44,12 +51,9 @@ class WandbLogger(Logger):
 
         # TODO: Log train reconstruction loss to wandb
 
-
         # TODO: Log validation reconstruction loss to wandb
 
-
         # TODO: Log a batch of reconstructed images from the validation set
-
 
         pass
 
@@ -84,41 +88,11 @@ class WandbLogger(Logger):
 
         pass
 
-    def log_embeddings(
-        self,
-        model: nn.Module,
-        train_loader: torch.utils.data.DataLoader,
+    @staticmethod
+    def log_plots(
+            plot: plt.Figure,
+            title: str,
     ):
-        out = model.encoder.linear.out_features
-        columns = np.arange(out).astype(str).tolist()
-        columns.insert(0, "target")
-        columns.insert(0, "image")
-
-        list_dfs = []
-
-        for i in range(3): # take only 3 batches of data for plotting
-            images, labels = next(iter(train_loader))
-
-            for img, label in zip(images, labels):
-                # forward img through the encoder
-                image = wandb.Image(img)
-                label = label.item()
-                latent = model.encoder(img.unsqueeze(dim=0)).squeeze().detach().cpu().numpy().tolist()
-                data = [image, label, *latent]
-
-                df = pd.DataFrame([data], columns=columns)
-                list_dfs.append(df)
-        embeddings = pd.concat(list_dfs, ignore_index=True)
-
-        # TODO: Log latent representations (embeddings)
-
-
-    def log_model_graph(
-        self,
-        model: nn.Module,
-        train_loader: torch.utils.data.DataLoader,
-    ):
-        # Wandb does not support logging the model graph
-        pass
-
+        # Log the plots to wandb
+        wandb.log({title: plot})
 
