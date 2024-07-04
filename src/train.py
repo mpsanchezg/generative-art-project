@@ -1,5 +1,11 @@
-
 import os
+import sys
+
+# insert root directory into python module search path
+sys.path.insert(1, os.getcwd())
+
+import argparse
+# import wandb_functions
 import random
 
 import matplotlib.pyplot as plt
@@ -14,14 +20,18 @@ from model import UNetGenerator, MultiScaleDiscriminator, weights_init_normal, P
     compute_gradient_penalty
 from src.config import DATA_DIR
 from src.custom_tranformations import FrameSpectrogramDataset
-from src.load_data import load_data
+from src.extract_frames import extract_frames
 from utils import denormalize, check_nan, plot_losses, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+parser = argparse.ArgumentParser()
+parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
+parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
+
+args = parser.parse_args()
 
 
 def train():
-
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
         'batch_size': 16,
@@ -33,13 +43,18 @@ def train():
         'output_channels': 3,
         'use_generated_frames_prob': 1
     }
+    task = 'train'
 
-    load_data()
+    # logger = WandbLogger(task, hparams)
+
+    if args.extract_frames:
+        extract_frames(args.number_of_videos)
 
     # Initialize dataset and dataloaders
-    path = os.path.join(DATA_DIR, "raining/frames")
+    path = os.path.join(DATA_DIR, "frames")
 
-    dataset = FrameSpectrogramDataset(path)
+    dataset = FrameSpectrogramDataset(path, video_selected=args.video_selected)
+
     dataset_size = len(dataset)
     split_index = int(0.9 * dataset_size)
     train_indices = list(range(split_index))
@@ -53,10 +68,13 @@ def train():
     # Get the first 10 pairs of data from the dataset
     first_10_pairs = [dataset[i] for i in range(10)]
     plot_first_10_pairs_of_data(first_10_pairs)
+    # plot_first_10_pairs_of_data(first_10_pairs, logger=logger)
 
     # Get the last 10 pairs of data from the dataset
     last_10_pairs = [dataset[i] for i in range(len(dataset) - 10, len(dataset))]
     plot_last_10_pairs_of_data(last_10_pairs)
+    # plot_last_10_pairs_of_data(last_10_pairs, logger=logger)
+    # logger.finish()
 
     # Initialize models, optimizers, and criteria
     netG = UNetGenerator().to(device)
@@ -147,6 +165,8 @@ def train():
             torch.nn.utils.clip_grad_norm_(netG.parameters(), max_norm=1.0)
             optimizerG.step()
 
+            # wandb.log({"lossG": lossG, "lossD": lossD})
+
             lossG = lossG.to(device)
             lossD = lossD.to(device)
             losses_G.append(lossG.item())
@@ -184,6 +204,9 @@ def train():
 
                         val_lossG += (
                                     val_loss_gan * 5 + val_loss_l1 * 50 + val_loss_perceptual * 10 + val_loss_feature_matching * 10).item()
+
+                        # log metrics to wandb
+                        # wandb.log({"val_lossG": val_lossG})
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)

@@ -8,12 +8,14 @@ from moviepy.editor import VideoFileClip
 from src.config import DATA_DIR
 
 
-def load_data():
+def extract_frames(number_of_videos):
     # Change directory to the folder containing the videos
-    os.path.join(DATA_DIR, "raining")
 
     # Get a list of all .mp4 files in the folder
     video_files = [f for f in os.listdir('.') if f.endswith('.mp4')]
+    print(video_files)
+    if number_of_videos:
+        video_files = video_files[:number_of_videos]
 
     # Create the 'frames' directory if it doesn't exist
     if not os.path.exists('frames'):
@@ -31,12 +33,11 @@ def load_data():
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_duration = total_frames / fps
-
-        video_path = '/home/eduardo/projects/generative-art-project/data/raining/-7tUj4-k2A8#4012#4022.mp4'
-        audio_path = '/home/eduardo/projects/generative-art-project/data/raining/audio.wav'
+        # TODO how to get the audio from the video
+        audio_path = video_file.replace('.mp4', '.wav')
 
         # Load the video file
-        video = VideoFileClip(video_path)
+        video = VideoFileClip(video_file)
 
         # Extract the audio and save it as a WAV file
         video.audio.write_audiofile(audio_path, codec='pcm_s16le')

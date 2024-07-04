@@ -18,7 +18,7 @@ def check_nan(tensor, name=""):
     return False
 
 
-def plot_first_10_pairs_of_data(first_10_pairs):
+def plot_first_10_pairs_of_data(first_10_pairs, logger=None):
     # Plot the first 10 pairs of data
     fig, axs = plt.subplots(10, 2, figsize=(10, 20))
     for i, (frame, prev_frame, spectrogram) in enumerate(first_10_pairs):
@@ -30,10 +30,13 @@ def plot_first_10_pairs_of_data(first_10_pairs):
         axs[i, 0].axis('off')
         axs[i, 1].axis('off')
 
-    plt.show()
+    if logger:
+        logger.log_plots(plot=plt, title="first_10_pairs")
+    else:
+        plt.show()
 
 
-def plot_last_10_pairs_of_data(last_10_pairs):
+def plot_last_10_pairs_of_data(last_10_pairs, logger=None):
     # Plot the last 10 pairs of data
     fig, axs = plt.subplots(10, 2, figsize=(10, 20))
     for i, (frame, prev_frame, spectrogram) in enumerate(last_10_pairs):
@@ -45,10 +48,13 @@ def plot_last_10_pairs_of_data(last_10_pairs):
         axs[i, 0].axis('off')
         axs[i, 1].axis('off')
 
-    plt.show()
+    if logger:
+        logger.log_plots(plot=plt, title="last_10_pairs")
+    else:
+        plt.show()
 
 
-def plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G):
+def plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G, logger=None):
     # Plot the losses
 
     plt.figure(figsize=(10, 5))
@@ -61,5 +67,9 @@ def plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G):
     plt.legend()
     plt.ylim(0, 20)  # Set the y-axis limits
     plt.grid(True)
-    plt.show()
+
+    if logger:
+        logger.log({"plot_losses": plt})
+    else:
+        plt.show()
 

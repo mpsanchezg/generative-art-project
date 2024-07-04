@@ -76,6 +76,8 @@ transform = transforms.Compose([
 
 # Create the dataset and dataloader for inference
 folder_path = os.path.join(DATA_DIR, "raining/frames/Inference Spectrograms")
+# TODO take a vide from youtube and transform it to spectrogram (with the code in train)
+#  place the inicial frame with the name _frame or _pose
 frames_dir = os.path.join(DATA_DIR, 'results/individual_frames')
 
 inference_dataset = SpectrogramNPYDataset(folder_path, transform=transform)
