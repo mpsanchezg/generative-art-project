@@ -44,10 +44,16 @@ class FrameSpectrogramDataset(Dataset):
     def __init__(self, root_dir, video_selected):
         self.root_dir = root_dir
         self.video_selected = video_selected
-        self.frame_files = sorted(
-            [f for f in os.listdir(root_dir) if '_frame' in f and
-             os.path.isfile(os.path.join(root_dir, f))
-             and 'video{}'.format(self.video_selected) in f])
+    
+        if (video_selected == None):
+            self.frame_files = sorted(
+                [f for f in os.listdir(root_dir) if '_frame' in f and
+                os.path.isfile(os.path.join(root_dir, f))])
+        else:
+            self.frame_files = sorted(
+                [f for f in os.listdir(root_dir) if '_frame' in f and
+                os.path.isfile(os.path.join(root_dir, f))
+                and 'video{}'.format(self.video_selected) in f])
         # Define the transformations
         self.transformS = transforms.Compose([
             transforms.Resize((256, 256)),  # Resize spectrogram to 256x256
