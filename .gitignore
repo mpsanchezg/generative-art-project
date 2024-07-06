@@ -1,10 +1,14 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.idea/
+*.ipynb_checkpoints/
 *.py[cod]
 *$py.class
 videos
 .DS_Store
+wandb*
 
+logs/*
 frames
 data/*
 
