@@ -35,7 +35,7 @@ def train():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
-        'batch_size': 1,
+        'batch_size': 10,
         'num_epochs': 10,
         'learning_rate': 0.00005,
         'betas': (0.5, 0.999),
@@ -63,8 +63,8 @@ def train():
     train_dataset = Subset(dataset, train_indices)
     val_dataset = Subset(dataset, val_indices)
 
-    dataloader = DataLoader(train_dataset, batch_size=1, shuffle=False)  # Assuming hparams['batch_size'] is 16
-    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+    dataloader = DataLoader(train_dataset, batch_size=hparams['batch_size'], shuffle=False)  # Assuming hparams['batch_size'] is 16
+    val_loader = DataLoader(val_dataset, batch_size=hparams['batch_size'], shuffle=False)
 
     # Get the first 10 pairs of data from the dataset
     # first_10_pairs = [dataset[i] for i in range(10)]
@@ -114,6 +114,7 @@ def train():
             inputs = torch.cat((spectrograms, prev_frames), dim=1)  # (N, 4, H, W)
 
             batch_size = inputs.shape[0]  # Get batch size from input data
+            print(batch_size)
             if batch_size != hparams['batch_size']:
                 inputs = inputs.expand(hparams['batch_size'], -1, -1, -1)
             hidden_state = netG.convlstm.init_hidden(hparams['batch_size'], (1,1))
