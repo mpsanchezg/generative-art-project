@@ -5,7 +5,6 @@ import sys
 sys.path.insert(1, os.getcwd())
 
 import argparse
-# import wandb_functions
 import random
 
 import matplotlib.pyplot as plt
@@ -102,11 +101,12 @@ def train():
     val_losses_G = []
     val_iteration_steps = []
 
-
+    tensorboard_counter = 0
     for epoch in range(hparams['num_epochs']):
         
         
         for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
+            tensorboard_counter += 1
             real_frames = real_frames.to(device)
             prev_frames = prev_frames.to(device)
             spectrograms = spectrograms.to(device)
@@ -114,7 +114,6 @@ def train():
             inputs = torch.cat((spectrograms, prev_frames), dim=1)  # (N, 4, H, W)
 
             batch_size = inputs.shape[0]  # Get batch size from input data
-            print(batch_size)
             if batch_size != hparams['batch_size']:
                 inputs = inputs.expand(hparams['batch_size'], -1, -1, -1)
             hidden_state = netG.convlstm.init_hidden(hparams['batch_size'], (1,1))
@@ -175,13 +174,10 @@ def train():
             losses_G.append(lossG.item())
             losses_D.append(lossD.item())
 
-            logger.log_training_loss_detailed(i, lossD_real, lossD_fake, loss_gan, loss_l1, loss_perceptual,
-                                              loss_feature_matching)
-            logger.log_training_loss_simple(i, lossG, lossD)
-
             if i % 500 == 0:
                 print(f'Epoch [{epoch+1}/{hparams["num_epochs"]}], Step [{i}/{len(dataloader)}], '
                     f'Loss D: {lossD.item():.4f}, Loss G: {lossG.item():.4f}')
+
                 with torch.no_grad():
                     val_lossG = 0.0
                     for val_real_frames, val_prev_frames, val_spectrograms in val_loader:
@@ -211,17 +207,50 @@ def train():
                             if any([check_nan(tensor, name) for tensor, name in zip([val_loss_gan, val_loss_l1, val_loss_perceptual, val_loss_feature_matching], ['val_loss_gan', 'val_loss_l1', 'val_loss_perceptual', 'val_loss_feature_matching'])]):
                                 continue
 
+
                             val_lossG += ((val_loss_gan * 15 + val_loss_l1 * 5 + val_loss_perceptual * 1 + val_loss_feature_matching * 1)/5).item()
 
-                            logger.log_training_loss(netG, epoch, lossG, lossD, val_loss_gan, val_loss_l1,
-                                                    val_loss_perceptual,
-                                                    val_loss_feature_matching, val_lossG)
+                            logger.log_validation_loss(
+                                tensorboard_counter,
+                                val_loss_gan,
+                                val_loss_l1,
+                                val_loss_perceptual,
+                                val_loss_feature_matching,
+                                val_lossG,
+                            )
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)
                 val_iteration_steps.append(epoch * len(dataloader) + i)
                 print(f'Validation Loss G: {val_lossG:.4f}')
 
+
+            logger.log_training_loss_detailed(
+                tensorboard_counter,
+                lossD,
+                lossD_real,
+                lossD_fake,
+                gradient_penalty,
+                lossG,
+                loss_gan,
+                loss_l1,
+                loss_perceptual,
+                loss_feature_matching
+            )
+
+            logger.log_training_loss(
+                epoch,
+                lossG,
+                lossD,
+                label='simple'
+            )
+
+        logger.log_training_loss(
+            epoch,
+            lossG,
+            lossD,
+            label='epoch'
+        )
         schedulerG.step()
         schedulerD.step()
 
