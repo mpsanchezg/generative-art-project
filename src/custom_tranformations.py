@@ -79,6 +79,9 @@ class FrameSpectrogramDataset(Dataset):
     def __getitem__(self, idx):
         frame_file = self.frame_files[idx]
         frame_path = os.path.join(self.root_dir, frame_file)
+
+        if (not os.path.exists(frame_path)):
+            return None, None, None
         
         frame = np.load(frame_path)
         spectrogram_file = frame_file.replace('_pose', '_spectrogram')
