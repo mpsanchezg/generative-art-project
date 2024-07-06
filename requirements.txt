@@ -88,3 +88,5 @@ typing_extensions==4.12.1
 urllib3==2.2.1
 wcwidth==0.2.13
 wheel==0.43.0
+tensorboard==2.9.0
+protobuf==3.20.1

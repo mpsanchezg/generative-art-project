@@ -22,6 +22,7 @@ from src.config import DATA_DIR
 from src.custom_tranformations import FrameSpectrogramDataset
 from src.extract_frames import extract_frames
 from utils import denormalize, check_nan, plot_losses, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
+from tensorboard_functions import TensorboardLogger
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
@@ -45,7 +46,7 @@ def train():
     }
     task = 'train'
 
-    # logger = WandbLogger(task, hparams)
+    logger = TensorboardLogger(task)
 
     if args.extract_frames:
         extract_frames(args.number_of_videos)
@@ -66,13 +67,13 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
     # Get the first 10 pairs of data from the dataset
-    first_10_pairs = [dataset[i] for i in range(10)]
-    plot_first_10_pairs_of_data(first_10_pairs)
+    # first_10_pairs = [dataset[i] for i in range(10)]
+    # plot_first_10_pairs_of_data(first_10_pairs)
     # plot_first_10_pairs_of_data(first_10_pairs, logger=logger)
 
     # Get the last 10 pairs of data from the dataset
-    last_10_pairs = [dataset[i] for i in range(len(dataset) - 10, len(dataset))]
-    plot_last_10_pairs_of_data(last_10_pairs)
+    # last_10_pairs = [dataset[i] for i in range(len(dataset) - 10, len(dataset))]
+    # plot_last_10_pairs_of_data(last_10_pairs)
     # plot_last_10_pairs_of_data(last_10_pairs, logger=logger)
     # logger.finish()
 
@@ -114,6 +115,7 @@ def train():
             fake_frames, hidden_state = netG(inputs, hidden_state)
             generated_frames.append(fake_frames)
             use_generated = random.random() < hparams['use_generated_frames_prob']
+
             if use_generated and len(generated_frames) > 1:
                 prev_frames = generated_frames[-1]
 
@@ -165,12 +167,14 @@ def train():
             torch.nn.utils.clip_grad_norm_(netG.parameters(), max_norm=1.0)
             optimizerG.step()
 
-            # wandb.log({"lossG": lossG, "lossD": lossD})
-
             lossG = lossG.to(device)
             lossD = lossD.to(device)
             losses_G.append(lossG.item())
             losses_D.append(lossD.item())
+
+            logger.log_training_loss_detailed(i, lossD_real, lossD_fake, loss_gan, loss_l1, loss_perceptual,
+                                              loss_feature_matching)
+            logger.log_training_loss_simple(i, lossG, lossD)
 
             if i % 400 == 0:
                 print(f'Epoch [{epoch}/{hparams["num_epochs"]}], Step [{i}/{len(dataloader)}], '
@@ -205,8 +209,9 @@ def train():
                         val_lossG += (
                                     val_loss_gan * 5 + val_loss_l1 * 50 + val_loss_perceptual * 10 + val_loss_feature_matching * 10).item()
 
-                        # log metrics to wandb
-                        # wandb.log({"val_lossG": val_lossG})
+                        logger.log_training_loss(netG, epoch, lossG, lossD, val_loss_gan, val_loss_l1,
+                                                 val_loss_perceptual,
+                                                 val_loss_feature_matching, val_lossG)
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)

@@ -8,6 +8,7 @@ videos
 .DS_Store
 wandb*
 
+logs/*
 frames
 data/*
 
