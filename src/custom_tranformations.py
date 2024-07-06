@@ -47,30 +47,30 @@ class FrameSpectrogramDataset(Dataset):
     
         if (video_selected == None):
             self.frame_files = sorted(
-                [f for f in os.listdir(root_dir) if '_frame' in f and
+                [f for f in os.listdir(root_dir) if '_pose' in f and
                 os.path.isfile(os.path.join(root_dir, f))])
         else:
             self.frame_files = sorted(
-                [f for f in os.listdir(root_dir) if '_frame' in f and
+                [f for f in os.listdir(root_dir) if '_pose' in f and
                 os.path.isfile(os.path.join(root_dir, f))
                 and 'video{}'.format(self.video_selected) in f])
         # Define the transformations
         self.transformS = transforms.Compose([
-            transforms.Resize((256, 256)),  # Resize spectrogram to 256x256
+            transforms.Resize((256, 256)),  # Resize spectrogram to correct shape for Mel-spectrogram
             transforms.RandomApply([AddGaussianNoise(0., 2)], p=0.3),
-            transforms.RandomApply([transforms.RandomResizedCrop(size=(256, 256), scale=(0.8, 1.0))], p=0.5),
-            transforms.RandomApply([FrequencyMasking(max_mask_size=5)], p=0.2),
+            transforms.RandomApply([FrequencyMasking(max_mask_size=8)], p=0.2),
         ])
 
         self.transformF = transforms.Compose([
+            transforms.RandomApply([transforms.RandomCrop(224)], p=0.2),  
             transforms.Resize((256, 256)),  # Resize frame to 256x256
-            transforms.RandomApply([AddGaussianNoise(0., 1)], p=0.5),
-            transforms.RandomApply([transforms.RandomResizedCrop(size=(256, 256), scale=(0.8, 1.0))], p=0.5),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)],
-                                   p=0.5)
+            transforms.RandomApply([AddGaussianNoise(0., 50)], p=0.5),
+            #transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)], p=0.5)
         ])
         self.transformF2 = transforms.Compose([
             transforms.Resize((256, 256)),  # Resize frame to 256x256
+            #transforms.RandomApply([AddGaussianNoise(0., 10)], p=0.8),
+            #transforms.RandomApply([transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1)], p=0.5)
         ])
 
     def __len__(self):
@@ -79,9 +79,9 @@ class FrameSpectrogramDataset(Dataset):
     def __getitem__(self, idx):
         frame_file = self.frame_files[idx]
         frame_path = os.path.join(self.root_dir, frame_file)
-
+        
         frame = np.load(frame_path)
-        spectrogram_file = frame_file.replace('_frame', '_spectrogram')
+        spectrogram_file = frame_file.replace('_pose', '_spectrogram')
         spectrogram_path = os.path.join(self.root_dir, spectrogram_file)
         spectrogram = np.load(spectrogram_path)
 
@@ -99,7 +99,7 @@ class FrameSpectrogramDataset(Dataset):
         spectrogram = torch.from_numpy(spectrogram.astype(np.float32)).unsqueeze(0)  # Add channel dimension
 
         # Apply transformations
-        frame = self.transformF2(frame)  # Resize spectrogram to 256x256
+        frame = self.transformF2(frame)
         prev_frame = self.transformF(prev_frame)
         spectrogram = self.transformS(spectrogram)
 

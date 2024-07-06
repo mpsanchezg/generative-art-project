@@ -228,7 +228,7 @@ class UNetGenerator(nn.Module):
             layers.append(nn.BatchNorm2d(out_channels))
             if dropout > 0:
                 layers.append(nn.Dropout(dropout))
-            layers.append(nn.ReLU(inplace=True))
+            layers.append(nn.LeakyReLU(inplace=True))
             return nn.Sequential(*layers)
 
         self.spectrogram_processor = SpectrogramProcessor(input_channels=1, hidden_dim=hidden_channels)
@@ -252,7 +252,9 @@ class UNetGenerator(nn.Module):
         self.up6 = up_block(512, 128)
         self.up7 = up_block(256, 64)
         self.up8 = nn.Sequential(
-            nn.ConvTranspose2d(128, output_channels, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 32, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv2d(32, output_channels, kernel_size=5, stride=1, padding=2, bias=False),
             nn.Tanh()
         )
 
@@ -345,12 +347,17 @@ class PatchGANDiscriminator(nn.Module):
                 layers.append(nn.InstanceNorm2d(out_channels))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return nn.Sequential(*layers)
-
+        
+        self.self_attention1 = SelfAttention(512)
+        self.self_attention2 = SelfAttention(512)
+        
         self.model = nn.Sequential(
             disc_block(input_channels, 64, batch_norm=False),  # First layer should match input_channels
             disc_block(64, 128),
             disc_block(128, 256),
             disc_block(256, 512),
+            SelfAttention(512),
+            SelfAttention(512),
             nn.Conv2d(512, 1, kernel_size=4, stride=1, padding=1, bias=False),
             nn.Sigmoid()
         )
