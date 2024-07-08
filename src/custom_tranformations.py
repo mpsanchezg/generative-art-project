@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
+import centralize_pose from utils
 
 
 class AddGaussianNoise(object):
@@ -84,6 +85,7 @@ class FrameSpectrogramDataset(Dataset):
             return None, None, None
         
         frame = np.load(frame_path)
+        frame = centralize_pose(frame, 100)
         spectrogram_file = frame_file.replace('_pose', '_spectrogram')
         spectrogram_path = os.path.join(self.root_dir, spectrogram_file)
         spectrogram = np.load(spectrogram_path)
@@ -93,6 +95,7 @@ class FrameSpectrogramDataset(Dataset):
             prev_frame_file = self.frame_files[idx - 1]
             prev_frame_path = os.path.join(self.root_dir, prev_frame_file)
             prev_frame = np.load(prev_frame_path)
+            prev_frame = centralize_pose(prev_frame, 100)
         else:
             prev_frame = np.zeros_like(frame)  # Use a zero array if there is no previous frame
 
@@ -112,4 +115,3 @@ class FrameSpectrogramDataset(Dataset):
         spectrogram = (spectrogram / 127.5) - 1
 
         return frame, prev_frame, spectrogram
-

@@ -86,3 +86,36 @@ def plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G, logger=No
     else:
         plt.show()
 
+
+def extract_keypoints(pose_array):
+    kepoints = []
+    for i, row in enumerate(pose_array):
+      for j, pixel in enumerate(row):
+        if (pixel[0] != 0 and pixel[1] != 0 and pixel[2] != 0):
+          kepoints.append((j, i))
+    return kepoints
+
+
+def centralize_pose(pose_array, padding, output_size=(256, 256)):
+    
+    # Extract keypoints using MediaPipe
+    keypoints = extract_keypoints(pose_array)
+    
+    if len(keypoints) == 0:
+        print("No pose detected.")
+        return pose_array
+
+    # Find the bounding box of the pose
+    x_min, y_min = np.min(keypoints, axis=0) - padding
+    x_max, y_max = np.max(keypoints, axis=0) + padding
+    
+    # Ensure bounding box is within image dimensions
+    x_min = max(x_min, 0)
+    y_min = max(y_min, 0)
+    x_max = min(x_max, image.shape[1])
+    y_max = min(y_max, image.shape[0])
+    
+    # Crop the image to the bounding box
+    cropped_image = image[y_min:y_max, x_min:x_max]
+    
+    return cv2.resize(cropped_image, output_size, interpolation=cv2.INTER_LINEAR)
