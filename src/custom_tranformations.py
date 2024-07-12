@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
-import centralize_pose from utils
+from utils import centralize_pose
 
 
 class AddGaussianNoise(object):
@@ -41,11 +41,12 @@ class FrequencyMasking(object):
 
 
 # Dataset class
+# Dataset class
 class FrameSpectrogramDataset(Dataset):
-    def __init__(self, root_dir, video_selected):
+    def __init__(self, root_dir, video_selected=None, sr=22050, n_fft=2048, n_mels=128):
         self.root_dir = root_dir
         self.video_selected = video_selected
-    
+
         if (video_selected == None):
             self.frame_files = sorted(
                 [f for f in os.listdir(root_dir) if '_pose' in f and
@@ -55,6 +56,11 @@ class FrameSpectrogramDataset(Dataset):
                 [f for f in os.listdir(root_dir) if '_pose' in f and
                 os.path.isfile(os.path.join(root_dir, f))
                 and 'video{}'.format(self.video_selected) in f])
+
+        self.frame_files = sorted([f for f in os.listdir(root_dir) if '_pose' in f and os.path.isfile(os.path.join(root_dir, f))])
+        
+        self.no_pose_repetitions = 0
+
         # Define the transformations
         self.transformS = transforms.Compose([
             transforms.Resize((256, 256)),  # Resize spectrogram to correct shape for Mel-spectrogram
@@ -63,7 +69,7 @@ class FrameSpectrogramDataset(Dataset):
         ])
 
         self.transformF = transforms.Compose([
-            transforms.RandomApply([transforms.RandomCrop(224)], p=0.2),  
+            transforms.RandomApply([transforms.RandomCrop(240)], p=0.1),
             transforms.Resize((256, 256)),  # Resize frame to 256x256
             transforms.RandomApply([AddGaussianNoise(0., 50)], p=0.5),
             #transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)], p=0.5)
@@ -78,14 +84,19 @@ class FrameSpectrogramDataset(Dataset):
         return len(self.frame_files)
 
     def __getitem__(self, idx):
+        if (idx >= len(self.frame_files)):
+            return self.__getitem__(idx - 1)
         frame_file = self.frame_files[idx]
         frame_path = os.path.join(self.root_dir, frame_file)
 
-        if (not os.path.exists(frame_path)):
-            return None, None, None
-        
         frame = np.load(frame_path)
-        frame = centralize_pose(frame, 100)
+        frame, is_pose = centralize_pose(frame, 20)
+
+        if (not is_pose):
+            self.frame_files.pop(idx)
+            if (idx >= len(self.frame_files)):
+                return self.__getitem__(idx)
+
         spectrogram_file = frame_file.replace('_pose', '_spectrogram')
         spectrogram_path = os.path.join(self.root_dir, spectrogram_file)
         spectrogram = np.load(spectrogram_path)
@@ -95,7 +106,7 @@ class FrameSpectrogramDataset(Dataset):
             prev_frame_file = self.frame_files[idx - 1]
             prev_frame_path = os.path.join(self.root_dir, prev_frame_file)
             prev_frame = np.load(prev_frame_path)
-            prev_frame = centralize_pose(prev_frame, 100)
+            prev_frame, _ = centralize_pose(prev_frame, 20)
         else:
             prev_frame = np.zeros_like(frame)  # Use a zero array if there is no previous frame
 

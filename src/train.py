@@ -104,15 +104,11 @@ def train():
     tensorboard_counter = 0
     for epoch in range(hparams['num_epochs']):
         
-        prev_frames = None
-        spectrograms = None
-        for i, (real_frames, _prev_frames, _spectrograms) in enumerate(dataloader):
-            if (real_frames == None):
-                continue
+        for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
             tensorboard_counter += 1
-            real_frames = _real_frames.to(device)
-            prev_frames = _prev_frames.to(device)
-            spectrograms = _spectrograms.to(device)
+            real_frames = real_frames.to(device)
+            prev_frames = prev_frames.to(device)
+            spectrograms = spectrograms.to(device)
 
             inputs = torch.cat((spectrograms, prev_frames), dim=1)  # (N, 4, H, W)
 

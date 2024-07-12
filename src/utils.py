@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
+import numpy as np
+import cv2
 
 
 def denormalize(tensor):
@@ -97,25 +99,21 @@ def extract_keypoints(pose_array):
 
 
 def centralize_pose(pose_array, padding, output_size=(256, 256)):
-    
-    # Extract keypoints using MediaPipe
     keypoints = extract_keypoints(pose_array)
-    
     if len(keypoints) == 0:
-        print("No pose detected.")
-        return pose_array
+        return pose_array, False
 
     # Find the bounding box of the pose
     x_min, y_min = np.min(keypoints, axis=0) - padding
     x_max, y_max = np.max(keypoints, axis=0) + padding
-    
+
     # Ensure bounding box is within image dimensions
     x_min = max(x_min, 0)
     y_min = max(y_min, 0)
-    x_max = min(x_max, image.shape[1])
-    y_max = min(y_max, image.shape[0])
-    
+    x_max = min(x_max, pose_array.shape[1])
+    y_max = min(y_max, pose_array.shape[0])
+
     # Crop the image to the bounding box
-    cropped_image = image[y_min:y_max, x_min:x_max]
-    
-    return cv2.resize(cropped_image, output_size, interpolation=cv2.INTER_LINEAR)
+    cropped_image = pose_array[y_min:y_max, x_min:x_max]
+
+    return cv2.resize(cropped_image, output_size, interpolation=cv2.INTER_LINEAR), True
