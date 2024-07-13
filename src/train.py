@@ -104,7 +104,6 @@ def train():
     tensorboard_counter = 0
     for epoch in range(hparams['num_epochs']):
         
-        
         for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
             tensorboard_counter += 1
             real_frames = real_frames.to(device)
