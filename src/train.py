@@ -28,7 +28,9 @@ import wandb
 parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
 parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
-
+parser.add_argument("-b", "--batch_size", type=int, default=10, help="Batch size")
+parser.add_argument("-e", "--epochs", type=int, default=10, help="Number of training epochs")
+parser.add_argument("-lr", "--learning_rate", type=int, default=0.001, help="Learning rate")
 args = parser.parse_args()
 
 
@@ -36,9 +38,9 @@ def train():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
-        'batch_size': 25,
-        'num_epochs': 20,
-        'learning_rate': 0.00001,
+        'batch_size': args.batch_size,
+        'num_epochs': args.num_epochs,
+        'learning_rate': args.learning_rate,
         'betas': (0.5, 0.999),
         'num_val_samples': 4,
         'input_channels': 4,
