@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
 parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
 parser.add_argument("-b", "--batch_size", type=int, default=10, help="Batch size")
-parser.add_argument("-e", "--epochs", type=int, default=10, help="Number of training epochs")
+parser.add_argument("-e", "--num_epochs", type=int, default=10, help="Number of training epochs")
 parser.add_argument("-lr", "--learning_rate", type=int, default=0.001, help="Learning rate")
 args = parser.parse_args()
 
