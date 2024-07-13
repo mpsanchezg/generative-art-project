@@ -344,26 +344,38 @@ class PatchGANDiscriminator(nn.Module):
         def disc_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, batch_norm=True):
             layers = [nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)]
             if batch_norm:
-                layers.append(nn.InstanceNorm2d(out_channels))
+                layers.append(nn.BatchNorm2d(out_channels))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return nn.Sequential(*layers)
         
         self.self_attention1 = SelfAttention(512)
         self.self_attention2 = SelfAttention(512)
         
-        self.model = nn.Sequential(
+        self.model1 = nn.Sequential(
             disc_block(input_channels, 64, batch_norm=False),  # First layer should match input_channels
             disc_block(64, 128),
             disc_block(128, 256),
             disc_block(256, 512),
+        )
+        self.model2 = nn.Sequential(
             SelfAttention(512),
             SelfAttention(512),
-            nn.Conv2d(512, 1, kernel_size=4, stride=1, padding=1, bias=False),
+            nn.Conv2d(512, 256, kernel_size=4, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(256, 128, kernel_size=4, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(128, 64, kernel_size=4, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 32, kernel_size=4, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(32, 1, kernel_size=4, stride=1, padding=1, bias=False),
             nn.Sigmoid()
         )
 
     def forward(self, x):
-        return self.model(x)
+        x = self.model1(x)
+
+        return self.model2(x)
 
 
 class MultiScaleDiscriminator(nn.Module):
@@ -431,9 +443,3 @@ class PerceptualLoss(nn.Module):
         input_features = self.layers(input)
         target_features = self.layers(target)
         return nn.functional.mse_loss(input_features, target_features)
-
-
-
-
-
-
