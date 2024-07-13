@@ -23,6 +23,7 @@ from src.extract_frames import extract_frames
 from utils import denormalize, check_nan, plot_losses, get_smoothed_labels, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
 from tensorboard_functions import TensorboardLogger
 import numpy as np
+import wandb
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
@@ -46,7 +47,25 @@ def train():
     }
     task = 'train'
 
+    run = wandb.init(
+        # Set the project where this run will be logged
+        project="generative-art",
+        notes="My first train in the console",
+        tags=["train", "video49"],
+        # Track hyperparameters and run metadata
+        config={
+            "learning_rate": hparams['learning_rate'],
+            "epochs": hparams['num_epochs'],
+            "batch_size": hparams['batch_size'],
+            "num_val_samples": hparams['num_val_samples'],
+            "input_channels": hparams['input_channels'],
+            "output_channels": hparams['output_channels'],
+            "use_generated_frames_prob": hparams['use_generated_frames_prob']
+        },
+    )
+
     logger = TensorboardLogger(task)
+    wandb.login()
 
     if args.extract_frames:
         extract_frames(args.number_of_videos)
@@ -219,6 +238,11 @@ def train():
                                 val_loss_feature_matching,
                                 val_lossG,
                             )
+                            wandb.log({"val_loss_gan": val_loss_gan,
+                                       "val_loss_l1": val_loss_l1,
+                                       "val_loss_perceptual": val_loss_perceptual,
+                                       "val_loss_feature_matching": val_loss_feature_matching,
+                                       "val_lossG": val_lossG})
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)
@@ -238,6 +262,10 @@ def train():
                 loss_perceptual,
                 loss_feature_matching
             )
+            wandb.log({"lossD": lossD,  "lossD_real": lossD_real, "lossD_fake": lossD_fake,
+                       "gradient_penalty": gradient_penalty, "lossG": lossG, "loss_gan": loss_gan, "loss_l1": loss_l1,
+                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching})
+
 
             logger.log_training_loss(
                 epoch,
