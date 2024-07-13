@@ -9,6 +9,7 @@ videos
 wandb*
 
 logs/*
+logs_tensorboard/*
 frames
 data/*
 

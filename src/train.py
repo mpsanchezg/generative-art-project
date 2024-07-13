@@ -49,6 +49,8 @@ def train():
     }
     task = 'train'
 
+    wandb.require("core")
+
     run = wandb.init(
         # Set the project where this run will be logged
         project="generative-art",
@@ -66,7 +68,6 @@ def train():
         },
     )
 
-    logger = TensorboardLogger(task)
     wandb.login()
 
     if args.extract_frames:
@@ -123,13 +124,13 @@ def train():
     val_losses_G = []
     val_iteration_steps = []
 
-    tensorboard_counter = 0
+    wandb_counter = 0
     for epoch in range(hparams['num_epochs']):
         lossG = np.NaN
         lossD = np.NaN
         
         for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
-            tensorboard_counter += 1
+            wandb_counter += 1
             real_frames = real_frames.to(device)
             prev_frames = prev_frames.to(device)
             spectrograms = spectrograms.to(device)
@@ -232,56 +233,22 @@ def train():
 
                             val_lossG += ((val_loss_gan * 2 + val_loss_l1 * 1 + val_loss_perceptual * 1 + val_loss_feature_matching * 1)).item()
 
-                            logger.log_validation_loss(
-                                tensorboard_counter,
-                                val_loss_gan,
-                                val_loss_l1,
-                                val_loss_perceptual,
-                                val_loss_feature_matching,
-                                val_lossG,
-                            )
                             wandb.log({"val_loss_gan": val_loss_gan,
                                        "val_loss_l1": val_loss_l1,
                                        "val_loss_perceptual": val_loss_perceptual,
                                        "val_loss_feature_matching": val_loss_feature_matching,
-                                       "val_lossG": val_lossG})
+                                       "val_lossG": val_lossG, "wandb_counter": wandb_counter})
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)
                 val_iteration_steps.append(epoch * len(dataloader) + i)
                 print(f'Validation Loss G: {val_lossG:.4f}')
 
-
-            logger.log_training_loss_detailed(
-                tensorboard_counter,
-                lossD,
-                lossD_real,
-                lossD_fake,
-                gradient_penalty,
-                lossG,
-                loss_gan,
-                loss_l1,
-                loss_perceptual,
-                loss_feature_matching
-            )
             wandb.log({"lossD": lossD,  "lossD_real": lossD_real, "lossD_fake": lossD_fake,
                        "gradient_penalty": gradient_penalty, "lossG": lossG, "loss_gan": loss_gan, "loss_l1": loss_l1,
-                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching})
+                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching,
+                       "wandb_counter": wandb_counter})
 
-
-            logger.log_training_loss(
-                epoch,
-                lossG,
-                lossD,
-                label='simple'
-            )
-
-        logger.log_training_loss(
-            epoch,
-            lossG,
-            lossD,
-            label='epoch'
-        )
         schedulerG.step()
         schedulerD.step()
 
