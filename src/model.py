@@ -159,8 +159,8 @@ class SpectrogramProcessor(nn.Module):
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return nn.Sequential(*layers)
 
-        self.down2 = down_block(64, 200, kernel_size=3, dilation=2, padding=2)  # Adjusted kernel size and padding
-        self.down3 = down_block(200, 512, kernel_size=3, dilation=4, padding=4)  # Adjusted kernel size and padding
+        self.down2 = down_block(64, 256, kernel_size=3, dilation=2, padding=2)  # Adjusted kernel size and padding
+        self.down3 = down_block(256, 512, kernel_size=3, dilation=4, padding=4)  # Adjusted kernel size and padding
         self.down4 = down_block(512, 512, kernel_size=3, dilation=8, padding=8)  # Adjusted kernel size and padding
         self.down5 = down_block(512, 512, kernel_size=3, dilation=16, padding=16)  # Adjusted kernel size and padding
         self.down6 = down_block(512, 512, kernel_size=3, dilation=32, padding=32)  # Adjusted kernel size and padding
