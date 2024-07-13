@@ -97,8 +97,7 @@ def extract_keypoints(pose_array):
           kepoints.append((j, i))
     return kepoints
 
-def is_pose(image):
-    keypoints = extract_keypoints(image)
+def is_pose(keypoints):
     if len(keypoints) == 0:
         return False
     return True
@@ -106,7 +105,7 @@ def is_pose(image):
 
 def centralize_pose(pose_array, padding, output_size=(256, 256)):
     keypoints = extract_keypoints(pose_array)
-    if is_pose(pose_array):
+    if is_pose(keypoints):
         return pose_array, False
 
     # Find the bounding box of the pose
