@@ -97,10 +97,15 @@ def extract_keypoints(pose_array):
           kepoints.append((j, i))
     return kepoints
 
+def is_pose(keypoints):
+    if len(keypoints) == 0:
+        return False
+    return True
+
 
 def centralize_pose(pose_array, padding, output_size=(256, 256)):
     keypoints = extract_keypoints(pose_array)
-    if len(keypoints) == 0:
+    if is_pose(keypoints):
         return pose_array, False
 
     # Find the bounding box of the pose

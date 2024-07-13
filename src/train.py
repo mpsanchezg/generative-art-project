@@ -22,6 +22,7 @@ from src.custom_tranformations import FrameSpectrogramDataset
 from src.extract_frames import extract_frames
 from utils import denormalize, check_nan, plot_losses, get_smoothed_labels, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
 from tensorboard_functions import TensorboardLogger
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
@@ -34,9 +35,9 @@ def train():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
-        'batch_size': 10,
-        'num_epochs': 10,
-        'learning_rate': 0.00005,
+        'batch_size': 25,
+        'num_epochs': 20,
+        'learning_rate': 0.00001,
         'betas': (0.5, 0.999),
         'num_val_samples': 4,
         'input_channels': 4,
@@ -82,12 +83,12 @@ def train():
 
     netG.apply(weights_init_normal)
     netD.apply(weights_init_normal)
-
+    
     optimizerG = optim.Adam(netG.parameters(), lr=hparams['learning_rate'], betas=hparams['betas'])
     optimizerD = optim.Adam(netD.parameters(), lr=hparams['learning_rate'], betas=hparams['betas'])
 
-    schedulerG = StepLR(optimizerG, step_size=1, gamma=0.1)
-    schedulerD = StepLR(optimizerD, step_size=1, gamma=0.1)
+    schedulerG = StepLR(optimizerG, step_size=1, gamma=0.8)
+    schedulerD = StepLR(optimizerD, step_size=1, gamma=0.8)
 
     criterion_gan = nn.BCEWithLogitsLoss().to(device)
     criterion_l1 = nn.L1Loss()
@@ -103,6 +104,8 @@ def train():
 
     tensorboard_counter = 0
     for epoch in range(hparams['num_epochs']):
+        lossG = np.NaN
+        lossD = np.NaN
         
         for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
             tensorboard_counter += 1
@@ -113,65 +116,64 @@ def train():
             inputs = torch.cat((spectrograms, prev_frames), dim=1)  # (N, 4, H, W)
 
             batch_size = inputs.shape[0]  # Get batch size from input data
-            if batch_size != hparams['batch_size']:
-                inputs = inputs.expand(hparams['batch_size'], -1, -1, -1)
-            hidden_state = netG.convlstm.init_hidden(hparams['batch_size'], (1,1))
+            if batch_size == hparams['batch_size']:
+                hidden_state = netG.convlstm.init_hidden(hparams['batch_size'], (1,1))
 
-            generated_frames = []
-            fake_frames, hidden_state = netG(inputs, hidden_state)
-            generated_frames.append(fake_frames)
-            use_generated = random.random() < hparams['use_generated_frames_prob']
-            if use_generated and len(generated_frames) > 1:
-                prev_frames = generated_frames[-1]
+                generated_frames = []
+                fake_frames, hidden_state = netG(inputs, hidden_state)
+                generated_frames.append(fake_frames)
+                use_generated = random.random() < hparams['use_generated_frames_prob']
+                if use_generated and len(generated_frames) > 1:
+                    prev_frames = generated_frames[-1]
 
-            inputs = torch.cat((spectrograms, prev_frames), dim=1)
-            real_inputs = torch.cat((inputs, real_frames), 1)  # (N, 7, H, W)
+                inputs = torch.cat((spectrograms, prev_frames), dim=1)
+                real_inputs = torch.cat((inputs, real_frames), 1)  # (N, 7, H, W)
 
-            optimizerD.zero_grad()
-            # Compute losses for Discriminator D
-            output_real = netD(real_inputs)
-            real_labels = [get_smoothed_labels(out, device, smooth_real=True) for out in output_real]
-            losses_D_real = [criterion_gan(out, label) for out, label in zip(output_real, real_labels)]
-            lossD_real = sum(losses_D_real)
+                optimizerD.zero_grad()
+                # Compute losses for Discriminator D
+                output_real = netD(real_inputs)
+                real_labels = [get_smoothed_labels(out, device, smooth_real=True) for out in output_real]
+                losses_D_real = [criterion_gan(out, label) for out, label in zip(output_real, real_labels)]
+                lossD_real = sum(losses_D_real)
 
-            fake_inputs = torch.cat((inputs, fake_frames.detach()), 1)  # (N, 7, H, W)
-            output_fake = netD(fake_inputs)
-            fake_labels = [get_smoothed_labels(out_fake, device, smooth_real=False) for out_fake in output_fake]
-            lossD_fake = sum([criterion_gan(out_fake, fake_label) for out_fake, fake_label in zip(output_fake, fake_labels)])
+                fake_inputs = torch.cat((inputs, fake_frames.detach()), 1)  # (N, 7, H, W)
+                output_fake = netD(fake_inputs)
+                fake_labels = [get_smoothed_labels(out_fake, device, smooth_real=False) for out_fake in output_fake]
+                lossD_fake = sum([criterion_gan(out_fake, fake_label) for out_fake, fake_label in zip(output_fake, fake_labels)])
 
-            gradient_penalty = compute_gradient_penalty(netD, real_inputs.data, fake_inputs.data)
+                gradient_penalty = compute_gradient_penalty(netD, real_inputs.data, fake_inputs.data)
 
-            # Check for NaNs before the backward pass
-            if any([check_nan(tensor, name) for tensor, name in zip([lossD_real, lossD_fake, gradient_penalty], ['lossD_real', 'lossD_fake', 'gradient_penalty'])]):
-                continue
+                # Check for NaNs before the backward pass
+                if any([check_nan(tensor, name) for tensor, name in zip([lossD_real, lossD_fake, gradient_penalty], ['lossD_real', 'lossD_fake', 'gradient_penalty'])]):
+                    continue
 
-            lossD = (lossD_real + lossD_fake) * 0.9 + gradient_penalty * 0.1
-            lossD.backward()
-            torch.nn.utils.clip_grad_norm_(netD.parameters(), max_norm=1.0)
-            optimizerD.step()
+                lossD = (lossD_real + lossD_fake) * 0.9 + gradient_penalty * 0.1
+                lossD.backward()
+                torch.nn.utils.clip_grad_norm_(netD.parameters(), max_norm=1.0)
+                optimizerD.step()
 
-            optimizerG.zero_grad()
-            # Compute losses and gradients for Generator G
-            fake_inputs = torch.cat((inputs, fake_frames), 1)  # (N, 7, H, W)
-            output_fake = netD(fake_inputs)
-            loss_gan = sum([criterion_gan(out_fake, get_smoothed_labels(out_fake, device, smooth_real=True)) for out_fake in output_fake])
-            loss_l1 = criterion_l1(fake_frames, real_frames)
-            loss_perceptual = criterion_perceptual(fake_frames, real_frames)
-            loss_feature_matching = feature_matching_loss(real_inputs, fake_inputs)
+                optimizerG.zero_grad()
+                # Compute losses and gradients for Generator G
+                fake_inputs = torch.cat((inputs, fake_frames), 1)  # (N, 7, H, W)
+                output_fake = netD(fake_inputs)
+                loss_gan = sum([criterion_gan(out_fake, get_smoothed_labels(out_fake, device, smooth_real=True)) for out_fake in output_fake])
+                loss_l1 = criterion_l1(fake_frames, real_frames)
+                loss_perceptual = criterion_perceptual(fake_frames, real_frames)
+                loss_feature_matching = feature_matching_loss(real_inputs, fake_inputs)
 
-            # Check for NaNs before the backward pass
-            if any([check_nan(tensor, name) for tensor, name in zip([loss_gan, loss_l1, loss_perceptual, loss_feature_matching], ['loss_gan', 'loss_l1', 'loss_perceptual', 'loss_feature_matching'])]):
-                continue
+                # Check for NaNs before the backward pass
+                if any([check_nan(tensor, name) for tensor, name in zip([loss_gan, loss_l1, loss_perceptual, loss_feature_matching], ['loss_gan', 'loss_l1', 'loss_perceptual', 'loss_feature_matching'])]):
+                    continue
 
-            lossG = (loss_gan * 15 + loss_l1 * 5 + loss_perceptual * 1 + loss_feature_matching * 1)/5
-            lossG.backward()
-            torch.nn.utils.clip_grad_norm_(netG.parameters(), max_norm=1.0)
-            optimizerG.step()
+                lossG = (loss_gan * 2 + loss_l1 * 1 + loss_perceptual * 1 + loss_feature_matching * 1)
+                lossG.backward()
+                torch.nn.utils.clip_grad_norm_(netG.parameters(), max_norm=1.0)
+                optimizerG.step()
 
-            lossG = lossG.to(device)
-            lossD = lossD.to(device)
-            losses_G.append(lossG.item())
-            losses_D.append(lossD.item())
+                lossG = lossG.to(device)
+                lossD = lossD.to(device)
+                losses_G.append(lossG.item())
+                losses_D.append(lossD.item())
 
             if i % 500 == 0:
                 print(f'Epoch [{epoch+1}/{hparams["num_epochs"]}], Step [{i}/{len(dataloader)}], '
@@ -207,7 +209,7 @@ def train():
                                 continue
 
 
-                            val_lossG += ((val_loss_gan * 15 + val_loss_l1 * 5 + val_loss_perceptual * 1 + val_loss_feature_matching * 1)/5).item()
+                            val_lossG += ((val_loss_gan * 2 + val_loss_l1 * 1 + val_loss_perceptual * 1 + val_loss_feature_matching * 1)).item()
 
                             logger.log_validation_loss(
                                 tensorboard_counter,
@@ -291,7 +293,7 @@ def train():
         plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G)
 
     # Save the model weights
-    torch.save(netG.state_dict(), "model_weights_V7.pth")
+    torch.save(netG.state_dict(), "model_weights_V8.pth")
 
 
 if __name__ == "__main__":
