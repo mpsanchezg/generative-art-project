@@ -23,11 +23,14 @@ from src.extract_frames import extract_frames
 from utils import denormalize, check_nan, plot_losses, get_smoothed_labels, plot_last_10_pairs_of_data, plot_first_10_pairs_of_data
 from tensorboard_functions import TensorboardLogger
 import numpy as np
+import wandb
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
 parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
-
+parser.add_argument("-b", "--batch_size", type=int, default=10, help="Batch size")
+parser.add_argument("-e", "--num_epochs", type=int, default=10, help="Number of training epochs")
+parser.add_argument("-lr", "--learning_rate", type=int, default=0.001, help="Learning rate")
 args = parser.parse_args()
 
 
@@ -35,9 +38,9 @@ def train():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
-        'batch_size': 25,
-        'num_epochs': 20,
-        'learning_rate': 0.00001,
+        'batch_size': args.batch_size,
+        'num_epochs': args.num_epochs,
+        'learning_rate': args.learning_rate,
         'betas': (0.5, 0.999),
         'num_val_samples': 4,
         'input_channels': 4,
@@ -46,7 +49,26 @@ def train():
     }
     task = 'train'
 
-    logger = TensorboardLogger(task)
+    wandb.require("core")
+
+    run = wandb.init(
+        # Set the project where this run will be logged
+        project="generative-art",
+        notes="My first train in the console",
+        tags=["train", "video49"],
+        # Track hyperparameters and run metadata
+        config={
+            "learning_rate": hparams['learning_rate'],
+            "epochs": hparams['num_epochs'],
+            "batch_size": hparams['batch_size'],
+            "num_val_samples": hparams['num_val_samples'],
+            "input_channels": hparams['input_channels'],
+            "output_channels": hparams['output_channels'],
+            "use_generated_frames_prob": hparams['use_generated_frames_prob']
+        },
+    )
+
+    wandb.login()
 
     if args.extract_frames:
         extract_frames(args.number_of_videos)
@@ -102,13 +124,13 @@ def train():
     val_losses_G = []
     val_iteration_steps = []
 
-    tensorboard_counter = 0
+    wandb_counter = 0
     for epoch in range(hparams['num_epochs']):
         lossG = np.NaN
         lossD = np.NaN
         
         for i, (real_frames, prev_frames, spectrograms) in enumerate(dataloader):
-            tensorboard_counter += 1
+            wandb_counter += 1
             real_frames = real_frames.to(device)
             prev_frames = prev_frames.to(device)
             spectrograms = spectrograms.to(device)
@@ -174,6 +196,11 @@ def train():
                 lossD = lossD.to(device)
                 losses_G.append(lossG.item())
                 losses_D.append(lossD.item())
+                
+                wandb.log({"lossD": lossD,  "lossD_real": lossD_real, "lossD_fake": lossD_fake,
+                       "gradient_penalty": gradient_penalty, "lossG": lossG, "loss_gan": loss_gan, "loss_l1": loss_l1,
+                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching,
+                       "wandb_counter": wandb_counter})
 
             if i % 500 == 0:
                 print(f'Epoch [{epoch+1}/{hparams["num_epochs"]}], Step [{i}/{len(dataloader)}], '
@@ -211,47 +238,17 @@ def train():
 
                             val_lossG += ((val_loss_gan * 2 + val_loss_l1 * 1 + val_loss_perceptual * 1 + val_loss_feature_matching * 1)).item()
 
-                            logger.log_validation_loss(
-                                tensorboard_counter,
-                                val_loss_gan,
-                                val_loss_l1,
-                                val_loss_perceptual,
-                                val_loss_feature_matching,
-                                val_lossG,
-                            )
+                            wandb.log({"val_loss_gan": val_loss_gan,
+                                       "val_loss_l1": val_loss_l1,
+                                       "val_loss_perceptual": val_loss_perceptual,
+                                       "val_loss_feature_matching": val_loss_feature_matching,
+                                       "val_lossG": val_lossG, "wandb_counter": wandb_counter})
 
                 val_lossG /= len(val_loader)
                 val_losses_G.append(val_lossG)
                 val_iteration_steps.append(epoch * len(dataloader) + i)
                 print(f'Validation Loss G: {val_lossG:.4f}')
 
-
-            logger.log_training_loss_detailed(
-                tensorboard_counter,
-                lossD,
-                lossD_real,
-                lossD_fake,
-                gradient_penalty,
-                lossG,
-                loss_gan,
-                loss_l1,
-                loss_perceptual,
-                loss_feature_matching
-            )
-
-            logger.log_training_loss(
-                epoch,
-                lossG,
-                lossD,
-                label='simple'
-            )
-
-        logger.log_training_loss(
-            epoch,
-            lossG,
-            lossD,
-            label='epoch'
-        )
         schedulerG.step()
         schedulerD.step()
 

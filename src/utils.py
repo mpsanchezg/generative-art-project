@@ -105,7 +105,9 @@ def is_pose(keypoints):
 
 def centralize_pose(pose_array, padding, output_size=(256, 256)):
     keypoints = extract_keypoints(pose_array)
-    if is_pose(keypoints):
+    isPose = is_pose(keypoints)
+
+    if (not isPose):
         return pose_array, False
 
     # Find the bounding box of the pose
