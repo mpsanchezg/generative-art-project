@@ -24,9 +24,12 @@ Table of Contents
 	 	* [Discriminator](#rdiscriminator)
 	 	* [Losses](#losses)
      * [Hyperparameter Tuning](#hyperparameter-tuning)
-		* [...](#learning-rate)
-        * [...](#batch-size)
-        * [...]
+		* [Lerning Rate](#learning-rate)
+        * [Number of Epochs](#number-of-epochs)
+        * [Increasing Discriminator Layers](#increasing-discriminator-layers)
+        * [Architectural Changes](#architectural-changes)
+        * [Batch Size](#batch-size)
+        * [Pixel Weighted Loss](#pixel-weighted-loss)
      * [Final results and conclusions](#final-results-conclusions)
   * [Poses to video](#poses-to-video)
     * [SD components](#sd-components)
@@ -81,25 +84,7 @@ We use a ControlNet model in order to extract poses from the dataset’s frames.
 These pose extractions are then used to train our model.
 ![Pose extraction](/images/pose_extractions.png)
 
-## Architecture
-
-We build our application in python version 3.12 with the libraries specified in the requirements.txt file.
-The project was developed in a Google Cloud VM with the following specifications:
-
-And locally we used a conda environment.
-
-The project is organized as a repository having the next components:
-
-| File                                                                                                                                            | Description                                                                                                                                              |
-|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [data/](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/dataset.ipynb)                                               | _Contains data in raw format._                                                                                                                           |
-| [src/config.py]                                                                                                                                 | _Contains the main configuration of the project, global variables and paths_                                                                             |
-| [src/custom_transformation.py]                                                                                                                  | _Contains functions created ofr specific transformations used in train._                                                                                 |
-| [src/extract_frames.py]                                                                                                                         | _Contains the classes to transform the video into frames and saving the to the data folder with specific names._                                         |
-| [src/model.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream.ipynb)                                | Contains all the classes used in training, this means both Generator and Discriminator classes as well fo all the rest of the models used for training.  |
-| [src/predict.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR.ipynb)                   | all the classes used in training, this means the Stable diffusion model with its Controlnet used for inference.                                          |
-| [src/train.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR_save_best_model.ipynb)     | Executes the training process and saves best accuracy model parameters.                                                                                  |
-| [src/utils.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR_save_best_model.ipynb)     | Contains the functions used across the project.                                                                                                          |
+## Music to poses
 
 
 ### GAN components
@@ -184,87 +169,167 @@ discriminator (disc1).
 
 - **Loss feature matching**
 
-	Penalizes # TODO: complete 
+	The feature matching loss involves using the intermediate feature maps from the discriminator as a basis for 
+comparison. Specifically, the generator's output is passed through the discriminator, and the features extracted 
+from different layers are compared to those extracted from the real images. This encourages the generator to 
+produce images with similar internal structures to real images.
 
 - **Loss GAN**
 
-	The BCE loss form the GAN architecture # TODO: complete 
+	The GAN loss is the Binary Cross-Entropy (BCE) loss used in the GAN architecture. It measures how well the generator can fool the discriminator. The generator aims to minimize this loss to generate images that the discriminator classifies as real.
 
 - **Loss L1**
 
-	# TODO: complete 
+	The L1 loss, also known as mean absolute error (MAE), compares the generated image with the real image on a pixel-by-pixel basis. This loss is often weighted to emphasize non-black pixels more than others, which can help the generator focus on critical regions of the image. 
 
 - **Loss perceptual**
 
-	Loads a VGG model that is trained to penalize over lack of human perception as an image #TODO: complete 
+	The perceptual loss loads a pre-trained VGG network to evaluate the perceptual similarity between the generated and real images. Instead of focusing solely on pixel-wise differences, this loss penalizes discrepancies in the high-level features, capturing human perceptual differences better. 
 
 ##### Losses form the Discriminator
 - **Loss real & loss fake**:
 
-	# TODO: complete 
+	The real and fake loss refers to the discriminator's ability to distinguish between real and fake images. The discriminator is trained to maximize the likelihood of correctly classifying real images as real and fake images as fake, often using BCE loss for this purpose.
 
 - **Loss criterion gradient**
 
-	# TODO: complete 
+	The gradient penalty loss involves interpolation between real and fake images to enforce the Lipschitz constraint, which helps stabilize the training of the discriminator. This loss penalizes the gradient norm deviation from 1. 
+
+#### Hyperparameter Tuning
+We experimented with various hyperparameters to optimize the model performance. Here are the results of our tuning efforts:
+
+##### Learning Rate
+We started with an initial learning rate from 0.0005 and then moved to a higher value 0.001.
+ALso during each epoch, the learning rate for the generator was initially divided by 10, then halved, and finally multiplied by 0.8 to fine-tune the adjustment dynamically.
+
+##### Number of Epochs (5, 10, 15, and 20)
+Lower learning rates and shorter runs (up to 10 epochs) initially we observed a stabilized loss. 
+However, with longer runs (up to 20 epochs), we observed that the loss started to fluctuate as if in a competitive game.
+Also, we discover that increasing the learning rate with shorter epochs (5 or 10) we saw a similar fluctuation as competitive game.
+
+##### Increasing Discriminator Layers
+Coinciding with the increased learning rate, adding more layers to the discriminator showed more GAN-like behavior.
+We increased the convolutional layers from one to five, enhancing the model's ability to capture complex features.
+
+##### Architectural Changes
+Replacing ReLU with LeakyReLU activation improved performance by allowing a small, non-zero gradient when the unit is not active.
+
+##### Batch Size
+Increasing the batch size accelerated the training process but did not significantly affect the final results.
+
+##### Pixel Weighted Loss
+Incorporating pixel-weighted loss improved image quality. The loss initially dropped slowly because the model had to learn from black regions (poses have significant black areas).
+The loss value was divided by 10, resulting in a lower but more effective loss curve, enhancing the learning process.
+
+#### Pixel Weighted Loss
+This section provides a comprehensive overview of the different loss functions used in the GAN architecture and the results of hyperparameter tuning, offering insights into how these elements contribute to the model's performance and training dynamics.
+
+## Video to poses
 
 ### SD components
+We used the Stable Diffusion (SD) model to generate videos from poses. The following components were integral to this process:
+#### AnimateDiff SD model
+The AnimateDiff SD model is a variant of the Stable Diffusion model specifically designed for generating animations. 
+It utilizes diffusion processes to generate high-quality video frames from a series of input poses. By leveraging the power of diffusion models, AnimateDiff ensures smooth transitions between frames and maintains the consistency of the generated video.
+
+#### Poses ControlNet
+Poses ControlNet is a neural network designed to control the generation process based on input poses. This component takes a sequence of human poses as input and guides the SD model to generate video frames that follow these poses accurately. It ensures that the movements in the generated video adhere to the provided pose sequence, maintaining the intended motion dynamics.
+
+#### TemporalNet
+TemporalNet is responsible for maintaining temporal consistency across the generated video frames. It ensures that the transitions between frames are smooth and natural, preventing abrupt changes and flickering. TemporalNet achieves this by incorporating temporal dependencies into the generation process, ensuring that each frame is contextually aligned with its preceding and succeeding frames.
+
+### Final results and conclusions
+The integration of AnimateDiff SD model, Poses ControlNet, and TemporalNet resulted in the successful generation of high-quality videos from pose sequences. Here are some key observations and conclusions from our experiments:
+
+**High-Quality Video Generation:** 
+The combination of these components allowed us to generate videos with high visual fidelity and smooth transitions between frames.
+
+**Accurate Pose Adherence:** 
+Poses ControlNet effectively guided the generation process, ensuring that the generated frames accurately followed the input pose sequences.
+
+**Temporal Consistency:** 
+TemporalNet significantly improved the temporal consistency of the generated videos, reducing flickering and abrupt transitions.
+
+**Efficient Training:** 
+The model components were optimized to work efficiently together, allowing for relatively fast training and inference times.
+Overall, the integration of these components in the Stable Diffusion model framework demonstrated a powerful approach to video generation from poses, with potential applications in animation, virtual reality, and other multimedia fields.
+
+## End to end pipeline
+
+### Platform architecture
+We build our application in python version 3.12 with the libraries specified in the requirements.txt file.
+The project was developed in a Google Cloud VM with the following specifications:
+
+And locally we used a conda environment.
+
+The project is organized as a repository having the next components:
+
+| File                                                                                                                                            | Description                                                                                                                                              |
+|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [data/](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/dataset.ipynb)                                               | _Contains data in raw format._                                                                                                                           |
+| [src/config.py]                                                                                                                                 | _Contains the main configuration of the project, global variables and paths_                                                                             |
+| [src/custom_transformation.py]                                                                                                                  | _Contains functions created ofr specific transformations used in train._                                                                                 |
+| [src/extract_frames.py]                                                                                                                         | _Contains the classes to transform the video into frames and saving the to the data folder with specific names._                                         |
+| [src/model.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream.ipynb)                                | Contains all the classes used in training, this means both Generator and Discriminator classes as well fo all the rest of the models used for training.  |
+| [src/predict.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR.ipynb)                   | all the classes used in training, this means the Stable diffusion model with its Controlnet used for inference.                                          |
+| [src/train.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR_save_best_model.ipynb)     | Executes the training process and saves best accuracy model parameters.                                                                                  |
+| [src/utils.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR_save_best_model.ipynb)     | Contains the functions used across the project.                                                                                                          |
 
 
-
-## Evaluation
-
-Evaluating dancing could be subjective and highly dependent on cultural aspects.
-
-We will use three evaluation methods, in which we balance automated metrics and subjective evaluations in order to assess the quality of our outputs.
-
-Ground truth poses vs. model poses
-We calculate the distributional spread of generated dances compared to ground truth dances. We measure the spread in the kinetic (related to movement) and geometric (related to shapes) feature spaces.
-Our goal would be to emulate our training data, therefore we would target having scores that match the score of ground truth distribution.
-
-
-
-## Installation
+## How to
+### Install the project
 You should create a Dockerfile and build the image using `docker build`
  
-## Running the project
-Once the project is done, you can train it by running the command `docker run <IMAGE_NAME> train`, and predict with the command `docker run <IMAGE_NAME> predict <INPUT_FEATURES>`. Note that you will need to mount some volumes when using `docker run`, otherwise these commands won't work.
+#### Install requirements
+To install the requirements, you can run the command `pip install -r requirements.txt`.
 
-## Run
+#### Install conda
+To install conda, you can follow the instructions in the [official documentation](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
-### Environment setup
-
+#### Create your conda environment
 ```
 conda create generative-art-project
 ```
 
+#### Setting the environment in Google Drive
+To set the environment in Google Drive, you can follow the instructions in the [official documentation](https://cloud.google.com/sdk/gcloud/reference/compute/ssh).
 ```
-conda activate generative-art-project
+gcloud compute ssh --zone "asia-northeast3-b" "generative-art-project-vm" --project "aidl2024-generatie-art-project"
 ```
+
+### Run the project
+Once the project is done, you can train it by running the command `docker run <IMAGE_NAME> train`, and predict with the command `docker run <IMAGE_NAME> predict <INPUT_FEATURES>`. Note that you will need to mount some volumes when using `docker run`, otherwise these commands won't work.
+
+
+#### Running training-inference scripts locally with conda
 
 ```
 pip install -r requirements
 ```
 
-## Connect to Google VM
+for training, you should run the following command
 
 ```
-gcloud compute ssh --zone "asia-northeast3-b" "generative-art-project-vm" --project "aidl2024-generatie-art-project"
+python {ROOT_DIR}/src/train.py 
 ```
 
-### Build Docker image
+To do inference, you should run the following command
 
 ```
-docker build -f Dockerfile -t gap_image .
+python {ROOT_DIR}/src/inference_sd.py 
 ```
 
-### Train
+
+#### Running training-inference scripts from VM in GCP
+
+for training, you should run the following command
 
 ```
 docker run -v ${ROOT_DIR}/data:/data -it gap_image train
 ```
 
+To do inference, you should run the following command
 
-### Inferecne
 
 ```
 docker run -v ${ROOT_DIR}/data:/data -it gap_image inference
