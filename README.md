@@ -184,27 +184,28 @@ discriminator (disc1).
 
 - **Loss feature matching**
 
-	Penalizes ...
+	Penalizes # TODO: complete 
 
 - **Loss GAN**
 
-	The BCE loss form the GAN architecture 
+	The BCE loss form the GAN architecture # TODO: complete 
 
 - **Loss L1**
 
-	dasda
+	# TODO: complete 
 
 - **Loss perceptual**
 
-	Loads a VGG model that is trained to penalize over lack of human perception as an image
+	Loads a VGG model that is trained to penalize over lack of human perception as an image #TODO: complete 
 
 ##### Losses form the Discriminator
 - **Loss real & loss fake**:
 
-	dfsfd
+	# TODO: complete 
+
 - **Loss criterion gradient**
 
-	salfkfad
+	# TODO: complete 
 
 ### SD components
 
