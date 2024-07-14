@@ -25,16 +25,7 @@ from tensorboard_functions import TensorboardLogger
 import numpy as np
 import wandb
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
-parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
-parser.add_argument("-b", "--batch_size", type=int, default=10, help="Batch size")
-parser.add_argument("-e", "--num_epochs", type=int, default=10, help="Number of training epochs")
-parser.add_argument("-lr", "--learning_rate", type=int, default=0.001, help="Learning rate")
-args = parser.parse_args()
-
-
-def train():
+def train(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Hyperparameters
     hparams = {
@@ -290,9 +281,16 @@ def train():
         plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G)
 
     # Save the model weights
+        torch.save(netG.state_dict(), f"model_weights_V8({i}).pth")
     torch.save(netG.state_dict(), "model_weights_V8.pth")
 
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--video_selected", type=int, default=None, help="Select a specific video to train on")
+parser.add_argument("--extract_frames", type=bool, default=False, help="Extract frames from videos")
+parser.add_argument("-b", "--batch_size", type=int, default=10, help="Batch size")
+parser.add_argument("-e", "--num_epochs", type=int, default=10, help="Number of training epochs")
+parser.add_argument("-lr", "--learning_rate", type=int, default=0.001, help="Learning rate")
+args = parser.parse_args()
 if __name__ == "__main__":
-    train()
+    train(args)
 
