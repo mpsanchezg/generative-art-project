@@ -13,6 +13,9 @@ from IPython.display import display, Image as displayImage
 from PIL import Image
 from typing import List
 from diffusers.utils import export_to_video
+from config import GENERATED_FRAMES_DIR, OUTPUT_VIDEO_DIR
+
+from datetime import datetime
 
 controlnet = ControlNetModel.from_pretrained("lllyasviel/control_v11p_sd15_openpose", torch_dtype=torch.float16)
 vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=torch.float16)
@@ -37,10 +40,11 @@ pipe.enable_model_cpu_offload()
 
 # Import the poses
 
-folder_path = '' # Add the folder_path
+folder_path = os.path.join(GENERATED_FRAMES_DIR, '2024-07-14-1-generated-frames')
 
 # List all npy files in the folder and take only the first 32
 npy_files = sorted(glob(os.path.join(folder_path, '*.npy')))[:32]
+print("len npy_files", len(npy_files))
 
 # Change this in order to use .png files instead of .npy
 
@@ -65,14 +69,16 @@ result = pipe(
     num_inference_steps=20,
 )
 
-export_to_gif(result.frames[0], "result.gif")
-display(displayImage("result.gif", embed=True))
+folder_path = os.path.join(OUTPUT_VIDEO_DIR, '{}-generated-frames'.format(datetime.now().strftime('%Y%m%d-%H')))
+
+export_to_gif(result.frames[0], os.path.join(folder_path, "result.gif"))
+# display(displayImage("result.gif", embed=True))
 
 # Define the directory path
-directory_path = ''
+
 
 # Define the full path for the video file
-output_video_path = os.path.join(directory_path, 'output_video.mp4')
+output_video_path = os.path.join(folder_path, 'output_video.mp4')
 video_frames = result.frames[0]
 
 # Set the desired frames per second (fps)
