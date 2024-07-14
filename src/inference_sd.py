@@ -75,6 +75,8 @@ result = pipe(
 
 folder_path = os.path.join(OUTPUT_VIDEO_DIR, '{}-generated-frames'.format(datetime.now().strftime('%Y%m%d-%H')))
 
+os.makedirs(folder_path, exist_ok=True)
+
 export_to_gif(result.frames[0], os.path.join(folder_path, "result.gif"))
 # display(displayImage("result.gif", embed=True))
 
