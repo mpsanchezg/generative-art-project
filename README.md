@@ -13,29 +13,30 @@ Table of Contents
 =================
   * [Introduction and motivation](#introduction-and-motivation)
   * [Dataset](#dataset)
-  * [Model architecture](#model)
-	 * [GANs components](#gan_improvements)
+    * [Description](#description) 
+    * [How to prepare the dataset from scratch](#how-to-prepare-the-dataset-from-scratch)
+      * [How to transform videos to poses](#how-to-extract-features-from-videos)
+      * [Clean dataset](#clean-dataset)
+      * [Convert video frames to video format](#convert-video-frames-to-video-format)
+  * [Music to poses](#music-to-poses)
+	 * [GANs components](#gan_components)
 	 	* [Generator](#Generator)
 	 	* [Discriminator](#rdiscriminator)
 	 	* [Losses](#losses)
-	 	* [Conclusions](#conclusions)
-	 * [SD components](#sd-components)
-		* [AnimateDiff SD model](#animatediff)
-        * [Poses ControlNet](#poses-controlnet)
-		* [TemporalNet](#temporalnet)
-	 * [Hyperparameter Tuning](#hyperparameter-tuning)
+     * [Hyperparameter Tuning](#hyperparameter-tuning)
 		* [...](#learning-rate)
         * [...](#batch-size)
         * [...]
-     * [Final results](#final-results)
-     * [Conclusions](#conclusions)
-  * [End to end system](#end-to-end-system)
+     * [Final results and conclusions](#final-results-conclusions)
+  * [Poses to video](#poses-to-video)
+    * [SD components](#sd-components)
+       * [AnimateDiff SD model](#animatediff)
+       * [Poses ControlNet](#poses-controlnet)
+       * [TemporalNet](#temporalnet)
+    * [Final results and conlusions](#final-results-conclusions)
+  * [End to end pipeline](#end-to-end-system)
 	 * [Platform architecture](#platform-architecture)
   * [How to](#how-to)
-	 * [How to prepare the dataset from scratch](#how-to-prepare-the-dataset-from-scratch)
-		* [How to transform videos to poses](#how-to-extract-features-from-videos)
-		* [Clean dataset](#clean-dataset)
-		* [Convert video frames to video format](#convert-video-frames-to-video-format)
      * [Install the project](#installation)
         * [Install requirements](#install-requirements)
         * [Install conda](#install-miniconda)
@@ -101,11 +102,113 @@ The project is organized as a repository having the next components:
 | [src/utils.py](https://github.com/gesturesAidl/video_processor/blob/main/scripts/training/main_two_stream_OneCycleLR_save_best_model.ipynb)     | Contains the functions used across the project.                                                                                                          |
 
 
-- GAN
-- SD
+### GAN components
+We trained a GAN model to generate from an audio input to poses. 
+The generator creates fake poses samples, while the discriminator evaluates whether the poses are real or fake. 
+Through an adversarial process, both networks improve, allowing the generator to produce better poses.
+
+The video input is decomposed by a series of frames and a series of spectrograms. In order to generate a pose to "dance" is to show to the 
+generator a spectrogram and the previous pose in order to make an inference over the next pose.
+
+The discriminator is solely dedicated to identify false poses.
+
+Now we delve into each of the components of the full GAN pix to pix style architecture.
+
+#### Generator
+The UNetGenerator is a neural network model based on the U-Net architecture.
+This model integrates several components as residual blocks, dilated convolutions, self-attention, spatial attention, and ConvLSTM to enhance its capabilities. 
+Here's a breakdown of its components and how they work together:
+
+- **Down Blocks**:
+
+	A series of convolutional layers (with optional batch normalization) followed by LeakyReLU activation, used to 
+downsample the input image.
+
+- **Up Blocks**:
+
+	A series of convolutional layers followed by pixel shuffle for upsampling, batch normalization, dropout (optional), and LeakyReLU activation.
+
+- **Spectrogram Processor**:
+
+	Processes spectrogram input using a separate module (not defined in the provided code).
+
+- **ConvLSTM Cell**:
+
+	Adds temporal dependencies to the model, enabling it to handle sequential data.
+
+- **Self-Attention and Spatial Attention**:
+
+	Adds attention mechanisms to focus on relevant parts of the input, enhancing the model's ability to capture important features.
+
+- **Residual Blocks**:
+
+	Adds residual connections to help with gradient flow and model training.
+
+- **Dilated Convolution Blocks**:
+
+	Uses dilated convolutions to capture a wider range of context without increasing the number of parameters.
+
+- **Final Output**:
+
+	Produces the final output image using a series of convolutional layers and a Tanh activation function.
+
+#### Discriminator
+
+The MultiScaleDiscriminator evaluates the quality of generated images. 
+This model employs multiple discriminators at different scales to capture both fine and coarse details, 
+ensuring a more comprehensive assessment of the generated images.
+
+This includes the concatenation of the real/generated image and any additional information like conditioning data.
+
+- **PatchGAN Discriminators**:
+
+	The model consists of two PatchGAN discriminators (disc1 and disc2), which are designed to classify whether overlapping 
+image patches are real or fake.  The input x (which includes the real/generated image and any additional information) is passed to the first PatchGAN 
+discriminator (disc1).
+
+- **Downsampling**:
+
+	The input x is also downsampled using average pooling (F.avg_pool2d) before being passed to the second PatchGAN 
+    discriminator (disc2). The average pooling reduces the size of the input, enabling the second discriminator to focus 
+    on a different scale of features.
+
+- **Output**:
+
+	The outputs from both discriminators (x1 and x2) are returned as a list. These outputs represent the patch-level predictions from both scales.
 
 ![Trainig diagram](/images/trainig_diagram.png)
 ![Inference diagram](/images/inference_diagram.png)
+
+#### Losses
+##### Losses from the Generator
+
+- **Loss feature matching**
+
+	Penalizes ...
+
+- **Loss GAN**
+
+	The BCE loss form the GAN architecture 
+
+- **Loss L1**
+
+	dasda
+
+- **Loss perceptual**
+
+	Loads a VGG model that is trained to penalize over lack of human perception as an image
+
+##### Losses form the Discriminator
+- **Loss real & loss fake**:
+
+	dfsfd
+- **Loss criterion gradient**
+
+	salfkfad
+
+### SD components
+
+
 
 ## Evaluation
 
