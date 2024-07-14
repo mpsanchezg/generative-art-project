@@ -40,8 +40,8 @@ pipe.enable_model_cpu_offload()
 
 # Import the poses
 
-folder_path = os.path.join(GENERATED_FRAMES_DIR, '2024-07-14-1-generated-frames')
-
+folder_path = os.path.join(GENERATED_FRAMES_DIR, '2024-14-17-1-generated-frames')
+print(folder_path)
 # List all npy files in the folder and take only the first 32
 npy_files = sorted(glob(os.path.join(folder_path, '*.npy')))[:32]
 print("len npy_files", len(npy_files))
