@@ -86,36 +86,10 @@ def predict(model_weights_file):
     folder_path = os.path.join(DATA_DIR, "test")
     # TODO take a vide from youtube and transform it to spectrogram (with the code in train)
     #  place the inicial frame with the name _frame or _pose
-    frames_dir = os.path.join(DATA_DIR, 'results/individual_frames')
+    frames_dir = os.path.join(DATA_DIR, 'results/generated-frames')
 
     inference_dataset = SpectrogramNPYDataset(folder_path, transform=transform)
     inference_loader = DataLoader(inference_dataset, batch_size=16, shuffle=False)
-
-
-    # Visualize a few spectrograms and the initial frame
-    def visualize_spectrograms(dataset, num_samples=5):
-        plt.figure(figsize=(15, 2.2))
-
-        # Plot initial frame
-        initial_frame = dataset.initial_frame.permute(1, 2, 0).numpy()
-        initial_frame = (initial_frame + 1) * 127.5  # Denormalize
-        plt.subplot(1, num_samples + 1, 1)
-        plt.imshow(initial_frame.astype(np.uint8))
-        plt.title('Initial Frame')
-
-        for i in range(num_samples):
-            spectrogram, _ = dataset[i]
-            spectrogram = spectrogram.squeeze().numpy()
-            plt.subplot(1, num_samples + 1, i + 2)
-            plt.imshow(spectrogram, aspect='auto', origin='lower')
-            plt.title(f'Sample {i + 1}')
-
-        plt.show()
-
-
-    visualize_spectrograms(inference_dataset, num_samples=5)
-
-    # ---------------- second cell
 
     netG.train()  # Set the model to training mode
 
@@ -124,7 +98,7 @@ def predict(model_weights_file):
     netG.to(device)
 
     # Create a directory to save individual frames if it doesn't exist
-    os.makedirs(f"{DATA_DIR}/results/individual_frames", exist_ok=True)
+    os.makedirs(f"{DATA_DIR}/results/generated-frames", exist_ok=True)
 
     # Perform inference and save the generated frames
     with torch.no_grad():
@@ -157,29 +131,12 @@ def predict(model_weights_file):
                 previous_frame = fake_frame
 
 
-    # Visualize the first few results
-    def visualize_generated_frames(folder_path, num_samples=5):
-        plt.figure(figsize=(15, 2.7))
-        for i in range(num_samples):
-            frame_path = os.path.join(folder_path, f'frame_{i + 1}.png')
-            frame = plt.imread(frame_path)
-            plt.subplot(1, num_samples, i + 1)
-            plt.imshow(frame)
-            plt.title(f'Frame {i + 1}')
-            plt.axis('off')
-        plt.show()
-
-
-    visualize_generated_frames(frames_dir, num_samples=5)
-
-    # -------------------- third cell
-
     # Path to save the video
-    transform_frames_in_video(video_filename="output_video_V10_5", frames_dir=frames_dir)
+    transform_frames_in_video(video_filename="output_video_8", frames_dir=frames_dir)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_weights_file", type=str, default="model_weights_V7.pth", help="Select a specific model weights file to inference")
+parser.add_argument("--model_weights_file", type=str, default="model_weights_Vframe.8.pth", help="Select a specific model weights file to inference")
 args = parser.parse_args()
 
 if __name__ == "__main__":
