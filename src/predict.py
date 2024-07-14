@@ -17,6 +17,7 @@ from torchvision.utils import save_image
 from model import UNetGenerator
 from src.config import DATA_DIR
 from utils import denormalize
+from predict.transform_frames_to_video import transform_frames_in_video
 
 # from torchvision.transforms import functional as F
 
@@ -36,7 +37,7 @@ class SpectrogramNPYDataset(Dataset):
         self.initial_frame = self.load_initial_frame()
 
     def load_initial_frame(self):
-        frame_files = [f for f in os.listdir(self.folder_path) if '_frame' in f]
+        frame_files = [f for f in os.listdir(self.folder_path) if '_pose' in f]
         if len(frame_files) == 0:
             raise FileNotFoundError("No initial frame found in the folder.")
         frame_path = os.path.join(self.folder_path, frame_files[0])
@@ -58,7 +59,7 @@ class SpectrogramNPYDataset(Dataset):
         # Ensure it has the channel dimension
         spectrogram = torch.from_numpy(spectrogram.astype(np.float32)).unsqueeze(0)  # Add channel dimension
 
-        spectrogram = transform(spectrogram)
+        spectrogram = self.transform(spectrogram)
 
         spectrogram = torch.tensor(spectrogram, dtype=torch.float32)
 
@@ -74,7 +75,7 @@ class SpectrogramNPYDataset(Dataset):
 def predict(model_weights_file):
     # Load the model weights
     netG = UNetGenerator(input_channels=4, output_channels=3)
-    netG.load_state_dict(torch.load(model_weights_file))
+    netG.load_state_dict(torch.load(model_weights_file, map_location=torch.device('cpu')))
     netG.eval()  # Set the model to evaluation mode
 
     transform = transforms.Compose([
@@ -82,7 +83,7 @@ def predict(model_weights_file):
     ])
 
     # Create the dataset and dataloader for inference
-    folder_path = os.path.join(DATA_DIR, "raining/frames/Inference Spectrograms")
+    folder_path = os.path.join(DATA_DIR, "test")
     # TODO take a vide from youtube and transform it to spectrogram (with the code in train)
     #  place the inicial frame with the name _frame or _pose
     frames_dir = os.path.join(DATA_DIR, 'results/individual_frames')
@@ -123,7 +124,7 @@ def predict(model_weights_file):
     netG.to(device)
 
     # Create a directory to save individual frames if it doesn't exist
-    os.makedirs('results/individual_frames', exist_ok=True)
+    os.makedirs(f"{DATA_DIR}/results/individual_frames", exist_ok=True)
 
     # Perform inference and save the generated frames
     with torch.no_grad():
@@ -174,33 +175,7 @@ def predict(model_weights_file):
     # -------------------- third cell
 
     # Path to save the video
-    video_path = os.path.join(DATA_DIR, 'results/output_video_V10_5.mp4')
-
-    # Frames per second
-    fps = 30
-
-    # Get the list of all frame files and sort them numerically
-    frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')],
-                        key=lambda x: int(x.split('_')[1].split('.')[0]))
-
-    # Read the first frame to get the dimensions
-    first_frame = cv2.imread(os.path.join(frames_dir, frame_files[0]))
-    height, width, layers = first_frame.shape
-
-    # Define the codec and create a VideoWriter object
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
-
-    # Write each frame to the video
-    for frame_file in frame_files:
-        frame_path = os.path.join(frames_dir, frame_file)
-        frame = cv2.imread(frame_path)
-        video.write(frame)
-
-    # Release the VideoWriter object
-    video.release()
-
-    print(f'Video saved at {video_path}')
+    transform_frames_in_video(video_filename="output_video_V10_5", frames_dir=frames_dir)
 
 
 parser = argparse.ArgumentParser()
