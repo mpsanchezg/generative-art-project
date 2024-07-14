@@ -196,6 +196,11 @@ def train():
                 lossD = lossD.to(device)
                 losses_G.append(lossG.item())
                 losses_D.append(lossD.item())
+                
+                wandb.log({"lossD": lossD,  "lossD_real": lossD_real, "lossD_fake": lossD_fake,
+                       "gradient_penalty": gradient_penalty, "lossG": lossG, "loss_gan": loss_gan, "loss_l1": loss_l1,
+                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching,
+                       "wandb_counter": wandb_counter})
 
             if i % 500 == 0:
                 print(f'Epoch [{epoch+1}/{hparams["num_epochs"]}], Step [{i}/{len(dataloader)}], '
@@ -243,11 +248,6 @@ def train():
                 val_losses_G.append(val_lossG)
                 val_iteration_steps.append(epoch * len(dataloader) + i)
                 print(f'Validation Loss G: {val_lossG:.4f}')
-
-            wandb.log({"lossD": lossD,  "lossD_real": lossD_real, "lossD_fake": lossD_fake,
-                       "gradient_penalty": gradient_penalty, "lossG": lossG, "loss_gan": loss_gan, "loss_l1": loss_l1,
-                       "loss_perceptual": loss_perceptual, "loss_feature_matching": loss_feature_matching,
-                       "wandb_counter": wandb_counter})
 
         schedulerG.step()
         schedulerD.step()
