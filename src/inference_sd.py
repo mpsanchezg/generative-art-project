@@ -46,6 +46,8 @@ print(folder_path)
 png_files = sorted(glob(os.path.join(folder_path, '*.png')))[:32]
 print("len png_files", len(png_files))
 
+
+
 # Change this in order to use .png files instead of .npy
 
 # Check if png_files is not empty
@@ -53,7 +55,9 @@ if not png_files:
     raise ValueError("No png files found in the specified folder.")
 
 # Load the npy files as images and convert them to PIL Images
-openpose_frames = [Image.fromarray(np.load(file).astype('uint8')) for file in png_files]
+openpose_frames = [Image.open(file) for file in png_files]
+# Verify if the images were added successfully
+print(f"Total frames: {len(openpose_frames)}")
 
 prompt = "A dancer in a beautiful salon in Paris."
 negative_prompt = "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck"
