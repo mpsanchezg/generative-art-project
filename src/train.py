@@ -281,6 +281,7 @@ def train(args):
         plot_losses(losses_G, losses_D, val_iteration_steps, val_losses_G)
 
     # Save the model weights
+        torch.save(netG.state_dict(), f"model_weights_V8({i}).pth")
     torch.save(netG.state_dict(), "model_weights_V8.pth")
 
 parser = argparse.ArgumentParser()
