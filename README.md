@@ -81,21 +81,20 @@ It has the following characteristics:
 - 10 Different dance genres
 
 We use a ControlNet model in order to extract poses from the dataset’s frames. 
-These pose extractions are then used to train our model.
+These extracted poses are then used to train our model.
 ![Pose extraction](/images/pose_extractions.png)
 
 ## Music to poses
 
 
 ### GAN components
-We trained a GAN model to generate from an audio input to poses. 
-The generator creates fake poses samples, while the discriminator evaluates whether the poses are real or fake. 
+We trained a GAN model to generate poses from an audio input. 
+The generator creates fake pose samples, while the discriminator evaluates whether the poses are real or fake. 
 Through an adversarial process, both networks improve, allowing the generator to produce better poses.
 
-The video input is decomposed by a series of frames and a series of spectrograms. In order to generate a pose to "dance" is to show to the 
-generator a spectrogram and the previous pose in order to make an inference over the next pose.
+The video input is decomposed into a series of frames and a series of spectrograms that correspond to each frame. In order to generate a pose the generator takes a spectrogram and the previous pose in order to make an inference and predict the next pose.
 
-The discriminator is solely dedicated to identify false poses.
+The discriminator is solely dedicated to identifying false poses.
 
 Now we delve into each of the components of the full GAN pix to pix style architecture.
 
@@ -111,7 +110,7 @@ downsample the input image.
 
 - **Up Blocks**:
 
-	A series of convolutional layers followed by pixel shuffle for upsampling, batch normalization, dropout (optional), and LeakyReLU activation.
+	A series of convolutional layers followed by pixel shuffle for upsampling, batch normalization, dropout, and LeakyReLU activation.
 
 - **Spectrogram Processor**:
 
@@ -127,11 +126,11 @@ downsample the input image.
 
 - **Residual Blocks**:
 
-	Adds residual connections to help with gradient flow and model training.
+	Adds residual connections to help with gradient flow and model training as part of the modified Unet.
 
 - **Dilated Convolution Blocks**:
 
-	Uses dilated convolutions to capture a wider range of context without increasing the number of parameters.
+	Uses dilated convolutions to capture a wider range of pixels without increasing the number of parameters.
 
 - **Final Output**:
 
@@ -143,7 +142,7 @@ The MultiScaleDiscriminator evaluates the quality of generated images.
 This model employs multiple discriminators at different scales to capture both fine and coarse details, 
 ensuring a more comprehensive assessment of the generated images.
 
-This includes the concatenation of the real/generated image and any additional information like conditioning data.
+This includes the concatenation of the real/generated image and any additional information like conditioning data (spectrograms).
 
 - **PatchGAN Discriminators**:
 
@@ -200,16 +199,16 @@ We experimented with various hyperparameters to optimize the model performance. 
 
 ##### Learning Rate
 We started with an initial learning rate from 0.0005 and then moved to a higher value 0.001.
-ALso during each epoch, the learning rate for the generator was initially divided by 10, then halved, and finally multiplied by 0.8 to fine-tune the adjustment dynamically.
+ALso during each epoch, the learning rate for the generator decreases. We have experimented with different values. It was initially divided by 10, then halved, and finally it is currently multiplied by 0.8 to fine-tune the adjustment dynamically.
 
 ##### Number of Epochs (5, 10, 15, and 20)
 Lower learning rates and shorter runs (up to 10 epochs) initially we observed a stabilized loss. 
-However, with longer runs (up to 20 epochs), we observed that the loss started to fluctuate as if in a competitive game.
-Also, we discover that increasing the learning rate with shorter epochs (5 or 10) we saw a similar fluctuation as competitive game.
+However, with longer runs (up to 20 epochs), we observed that the loss started to fluctuate as if in a true competition between generator and discriminator.
+Also, we discovered that when increasing the learning rate with shorter epochs (5 or 10) we saw a similar fluctuation without needing to train for as many epochs.
 
 ##### Increasing Discriminator Layers
-Coinciding with the increased learning rate, adding more layers to the discriminator showed more GAN-like behavior.
-We increased the convolutional layers from one to five, enhancing the model's ability to capture complex features.
+Coinciding with the increased learning rate, adding more layers to the discriminator showed more GAN-like competition behavior.
+We increased the convolutional layers from one to five, enhancing the model's ability to capture complex features through more trainable parameters.
 
 ##### Architectural Changes
 Replacing ReLU with LeakyReLU activation improved performance by allowing a small, non-zero gradient when the unit is not active.
@@ -219,7 +218,7 @@ Increasing the batch size accelerated the training process but did not significa
 
 ##### Pixel Weighted Loss
 Incorporating pixel-weighted loss improved image quality. The loss initially dropped slowly because the model had to learn from black regions (poses have significant black areas).
-The loss value was divided by 10, resulting in a lower but more effective loss curve, enhancing the learning process.
+The loss value was divided by 10 when the pixel is black, resulting in a lower but more effective loss curve, enhancing the learning process and generating better images.
 
 #### Pixel Weighted Loss
 This section provides a comprehensive overview of the different loss functions used in the GAN architecture and the results of hyperparameter tuning, offering insights into how these elements contribute to the model's performance and training dynamics.
