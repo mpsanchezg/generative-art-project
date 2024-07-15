@@ -302,9 +302,7 @@ The project is organized as a repository having the next components:
 
 
 ## How to
-### Install the project
-You should create a Dockerfile and build the image using `docker build`
- 
+
 #### Install requirements
 To install the requirements, you can run the command `pip install -r requirements.txt`.
 
