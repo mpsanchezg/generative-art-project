@@ -293,11 +293,11 @@ The project is organized as a repository having the next components:
 |-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [data/](https://github.com/mpsanchezg/generative-art-project/tree/main/data)                                               | _Contains data in raw format._                                                                                                                           |
 | [src/config.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/config.py)                                                                                                                                 | _Contains the main configuration of the project, global variables and paths_                                                                             |
-| [src/custom_transformation.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/custom_transformation.py)                                                                                                                  | _Contains functions created ofr specific transformations used in train._                                                                                 |
-| [src/extract_frames.py]                                                                                                                         | _Contains the classes to transform the video into frames and saving the to the data folder with specific names._                                         |
+| [src/custom_transformation.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/custom_tranformations.py)                                                                                                                  | _Contains functions created ofr specific transformations used in train._                                                                                 |
+| [src/extract_frames.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/extract_frames.py)                                                                                                                         | _Contains the classes to transform the video into frames and saving the to the data folder with specific names._                                         |
 | [src/model.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/model.py)                                | Contains all the classes used in training, this means both Generator and Discriminator classes as well fo all the rest of the models used for training.  |
 | [src/predict.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/predict.py)                   | all the classes used in training, this means the Stable diffusion model with its Controlnet used for inference.                                          |
-| [src/train.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/traina.py)     | Executes the training process and saves best accuracy model parameters.                                                                                  |
+| [src/train.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/train.py)     | Executes the training process and saves best accuracy model parameters.                                                                                  |
 | [src/utils.py](https://github.com/mpsanchezg/generative-art-project/blob/main/src/utils.py)     | Contains the functions used across the project.                                                                                                          |
 
 
@@ -340,7 +340,7 @@ python {ROOT_DIR}/src/train.py
 To do prediction to make poses, you should run the following command
 
 ```
-python {ROOT_DIR}/src/prediction.py 
+python {ROOT_DIR}/src/predict.py 
 ```
 
 
