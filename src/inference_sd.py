@@ -67,7 +67,7 @@ openpose_frames = [Image.open(file) for file in sorted_png_files[:32]]
 # Verify if the images were added successfully
 print(f"Total frames: {len(openpose_frames)}")
 
-prompt = "A dancer in a beautiful salon in Paris."
+prompt = "A man dancing in a beautiful salon in Paris."
 negative_prompt = "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck"
 result = pipe(
     prompt=prompt,
