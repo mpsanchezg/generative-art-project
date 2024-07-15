@@ -40,26 +40,34 @@ pipe.enable_model_cpu_offload()
 
 # Import the poses
 
-folder_path = os.path.join(GENERATED_FRAMES_DIR, '2024-14-17-1-generated-frames')
+folder_path = GENERATED_FRAMES_DIR
 print(folder_path)
 # List all npy files in the folder and take only the first 32
-png_files = sorted(glob(os.path.join(folder_path, '*.png')))[:32]
-print("len png_files", len(png_files))
+png_files = glob(os.path.join(folder_path, '*.png'))
+png_files_dict = {}
+for png_file in png_files:
+    num_frame = png_file.split("_")[-1].replace(".png", "")
+    png_files_dict[int(num_frame)] = png_file
+
+sorted_png_files_keys = png_files_dict.keys()
+sorted_png_files = [png_files_dict[i] for i in sorted(list(sorted_png_files_keys))]
+
+print("len png_files", len(sorted_png_files))
 
 
 
 # Change this in order to use .png files instead of .npy
 
 # Check if png_files is not empty
-if not png_files:
+if not sorted_png_files:
     raise ValueError("No png files found in the specified folder.")
 
 # Load the npy files as images and convert them to PIL Images
-openpose_frames = [Image.open(file) for file in png_files]
+openpose_frames = [Image.open(file) for file in sorted_png_files[:32]]
 # Verify if the images were added successfully
 print(f"Total frames: {len(openpose_frames)}")
 
-prompt = "A dancer in a beautiful salon in Paris."
+prompt = "A man dancing in a beautiful salon in Paris."
 negative_prompt = "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck"
 result = pipe(
     prompt=prompt,

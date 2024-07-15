@@ -26,7 +26,7 @@ import numpy as np
 import wandb
 
 def train(args):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Hyperparameters
     hparams = {
         'batch_size': args.batch_size,
