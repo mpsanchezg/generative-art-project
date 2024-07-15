@@ -323,7 +323,6 @@ gcloud compute ssh --zone "asia-northeast3-b" "generative-art-project-vm" --proj
 ```
 
 ### Run the project
-Once the project is done, you can train it by running the command `docker run <IMAGE_NAME> train`, and predict with the command `docker run <IMAGE_NAME> predict <INPUT_FEATURES>`. Note that you will need to mount some volumes when using `docker run`, otherwise these commands won't work.
 
 
 #### Running training-inference scripts locally with conda
