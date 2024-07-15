@@ -338,26 +338,18 @@ for training, you should run the following command
 python {ROOT_DIR}/src/train.py 
 ```
 
+To do prediction to make poses, you should run the following command
+
+```
+python {ROOT_DIR}/src/prediction.py 
+```
+
+
 To do inference, you should run the following command
 
 ```
 python {ROOT_DIR}/src/inference_sd.py 
 ```
 
-
-#### Running training-inference scripts from VM in GCP
-
-for training, you should run the following command
-
-```
-docker run -v ${ROOT_DIR}/data:/data -it gap_image train
-```
-
-To do inference, you should run the following command
-
-
-```
-docker run -v ${ROOT_DIR}/data:/data -it gap_image inference
-```
 
 
