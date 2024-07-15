@@ -223,35 +223,61 @@ The loss value was divided by 10 when the pixel is black, resulting in a lower b
 #### Pixel Weighted Loss
 This section provides a comprehensive overview of the different loss functions used in the GAN architecture and the results of hyperparameter tuning, offering insights into how these elements contribute to the model's performance and training dynamics.
 
-## Video to poses
+## SD Inference: Poses to Video
 
-### SD components
-We used the Stable Diffusion (SD) model to generate videos from poses. The following components were integral to this process:
+### Image and video generation: Main components
+
+Stable Diffusion (SD) is generative artificial intelligence model that creates images from text and image prompts. 
+We used one of Stable Diffusion's models in order to generate beautiful visual outputs. As an open source model, researchers, 
+engineers and artists have made additional contributions, which have led to the augmentation of its initial capabilies.
+
+Along with SD, we have leveraged AnimateDiff and ControlNet, which have been integrated together through a custom pipeline.
+This custom pipeline, developed by the open source community, is a key part of the video generation.
+
+In this section, we describe the different pieces that we have leveraged in order to generate a video from poses and a text prompt.
+
 #### AnimateDiff SD model
-The AnimateDiff SD model is a variant of the Stable Diffusion model specifically designed for generating animations. 
-It utilizes diffusion processes to generate high-quality video frames from a series of input poses. By leveraging the power of diffusion models, AnimateDiff ensures smooth transitions between frames and maintains the consistency of the generated video.
 
-#### Poses ControlNet
-Poses ControlNet is a neural network designed to control the generation process based on input poses. This component takes a sequence of human poses as input and guides the SD model to generate video frames that follow these poses accurately. It ensures that the movements in the generated video adhere to the provided pose sequence, maintaining the intended motion dynamics.
+The AnimateDiff SD model is a variant of the Stable Diffusion model specifically designed for generating animations.
+It appends a motion modeling module to the frozen SD model and trains it on video clips in order to learn a motion prior.
+The module is then used to generate animated images.
 
-#### TemporalNet
-TemporalNet is responsible for maintaining temporal consistency across the generated video frames. It ensures that the transitions between frames are smooth and natural, preventing abrupt changes and flickering. TemporalNet achieves this by incorporating temporal dependencies into the generation process, ensuring that each frame is contextually aligned with its preceding and succeeding frames.
+#### ControlNet
+
+ControlNet is a neural network designed to control the generation process. It guides image generation using auxiliary inputs
+like segmentation maps, depth maps, and edge maps. In our case, we use a pretrained ControlNet with an Openpose detector.
+
+#### AnimateDiff ControlNet pipeline
+
+In order to both generate a video from a prompt, maintaining pose consistency, we needed to combine an image generation model
+with animation and pose control.
+
+We found a pipeline that makes a connection between AnimateDiff and ControlNet. 
+The default generation has 16 frames. In order to generate longer videos, we use 32 frames.
+In addition to this, we it uses a motion pretrained motion adapter and a Variation Autoencoder, and can be used with other SD 1.5 models.
 
 ### Final results and conclusions
-The integration of AnimateDiff SD model, Poses ControlNet, and TemporalNet resulted in the successful generation of high-quality videos from pose sequences. Here are some key observations and conclusions from our experiments:
+
+The integration of AnimateDiff SD model, ControlNet, and AnimateDiff resulted in the successful generation of high-quality videos from pose sequences. 
+Here are some key observations and conclusions from our experiments:
 
 **High-Quality Video Generation:** 
-The combination of these components allowed us to generate videos with high visual fidelity and smooth transitions between frames.
+
+The combination of these elements allowed us to generate videos with high visual fidelity and smooth transitions between frames.
 
 **Accurate Pose Adherence:** 
+
 Poses ControlNet effectively guided the generation process, ensuring that the generated frames accurately followed the input pose sequences.
 
 **Temporal Consistency:** 
+
 TemporalNet significantly improved the temporal consistency of the generated videos, reducing flickering and abrupt transitions.
 
 **Efficient Training:** 
-The model components were optimized to work efficiently together, allowing for relatively fast training and inference times.
-Overall, the integration of these components in the Stable Diffusion model framework demonstrated a powerful approach to video generation from poses, with potential applications in animation, virtual reality, and other multimedia fields.
+
+The model components were optimized to work efficiently together, allowing for relatively fast inference times.
+Overall, the integration of these components in the Stable Diffusion model framework demonstrated a powerful approach to video generation from poses.
+
 
 ## End to end pipeline
 
