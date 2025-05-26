@@ -78,7 +78,7 @@ threadpoolctl==3.5.0
 torch==2.3.1
 torchaudio==2.3.1
 torchvision==0.18.1
-tornado==6.4
+tornado==6.5.1
 tqdm==4.66.2
 traitlets==5.14.3
 typing_extensions==4.12.1
